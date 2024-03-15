@@ -1,12 +1,19 @@
 from typing import Optional, List
 
 import numpy as np
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib
+import ssl
 
 app = FastAPI()
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ssl_context.load_cert_chain(
+    "C:/Windows/System32/cert.pem",
+    keyfile="C:/Windows/System32/key.pem"
+)
 
 origins = [
     'http://localhost:3000',
