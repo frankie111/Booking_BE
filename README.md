@@ -1,7 +1,30 @@
 # Booking_BE
 
-pip install fastapi uvicorn[standard] cryptography
+## Run following commands to setup the project:
 
-choco install openssl
+pip install fastapi
 
-uvicorn app:app --ssl-keyfile C:/Windows/System32/key.pem --ssl-certfile C:/Windows/System32/cert.pem
+pip install fastapi[all]
+
+pip install "uvicorn[standard]"
+
+pip install firebase-admin
+
+pip install joblib
+
+pip install scikit-learn
+
+- Add path to firebase credential json file in firebase.py
+
+## Running the project
+
+uvicorn app:app --reload
+
+
+
+[//]: # (pip install fastapi uvicorn[standard] cryptography)
+
+[//]: # (choco install openssl)
+
+[//]: # ()
+[//]: # (uvicorn app:app --ssl-keyfile C:/Windows/System32/key.pem --ssl-certfile C:/Windows/System32/cert.pem)
