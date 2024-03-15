@@ -11,7 +11,7 @@ import ssl
 from routes.users import users
 
 app = FastAPI(
-    title="Odin API",
+    title="Booking API",
     description="API for Booking",
     version="0.1.0",
     swagger_ui_parameters={"defaultModelsExpandDepth": -1},
