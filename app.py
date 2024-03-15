@@ -18,11 +18,11 @@ app = FastAPI(
 )
 app.include_router(users)
 
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ssl_context.load_cert_chain(
-    "C:/Windows/System32/cert.pem",
-    keyfile="C:/Windows/System32/key.pem"
-)
+# ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+# ssl_context.load_cert_chain(
+#     "C:/Windows/System32/cert.pem",
+#     keyfile="C:/Windows/System32/key.pem"
+# )
 
 origins = [
     'http://localhost:3000',
