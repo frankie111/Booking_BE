@@ -1,4 +1,9 @@
+from fastapi import APIRouter
+from pydantic import BaseModel
+
 from firebase import get_auth, get_client
+
+users = APIRouter()
 
 
 def register_user(email, password):
@@ -38,6 +43,25 @@ def delete_user(uid):
     except Exception as e:
         print('Error deleting user:', e)
 
+
+class AddUserModelResponse(BaseModel):
+    message: str
+
+
+class AddUserModelRequest(BaseModel):
+    email: str
+    name: str
+    password: str
+
+
+@users.post("/user/", response_model=AddUserModelResponse)
+async def add_user(
+        req: AddUserModelRequest
+):
+    user = register_user(req.email, req.password)
+    save_user_data(user.uid, req.email, req.name)
+
+    return AddUserModelResponse(message=f"Added user [{user.uid}] - {req.name}")
 
 # name = "mircox"
 # email = "mircea.rautoiu@gmail.com"

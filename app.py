@@ -8,7 +8,16 @@ from pydantic import BaseModel
 import joblib
 import ssl
 
-app = FastAPI()
+from routes.users import users
+
+app = FastAPI(
+    title="Odin API",
+    description="API for Booking",
+    version="0.1.0",
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1},
+)
+app.include_router(users)
+
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 ssl_context.load_cert_chain(
     "C:/Windows/System32/cert.pem",
