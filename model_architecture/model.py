@@ -24,10 +24,7 @@ def plot_history(history):
 
 
 def load_data(input_path_desks, input_path_meeting_rooms):
-    input_path_desks = pd.read_csv(input_path_desks, header=None)
-    input_path_meeting_rooms = pd.read_csv(input_path_meeting_rooms, header=None)
-    return input_path_desks, input_path_meeting_rooms
-
+    pass
 
 def split_data():
     pass
@@ -47,10 +44,7 @@ def save_model_to_pickle():
 
 def main():
     print("Loading data...")
-    input_path_desks, input_path_meeting_rooms = load_data("hackathon-schema.csv", "meeting-rooms.csv")
-    # print(input_path_desks.head())
-    print(input_path_meeting_rooms.head())
-    print("Data loaded successfully.")
+
 
 
 if __name__ == "__main__":

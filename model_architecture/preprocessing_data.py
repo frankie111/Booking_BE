@@ -25,7 +25,7 @@ def preprocess_meeting_room_data(filepath):
 
     # Convert TRUE/FALSE values to 1/0 for the availability columns
     availability_columns = ['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']
-    df[availability_columns] = df[availability_columns].apply(lambda x: x.map({'TRUE': 1, 'FALSE': 0}))
+    df[availability_columns] = df[availability_columns].applymap(lambda x: 1 if str(x).strip().upper() == 'TRUE' else 0 if str(x).strip().upper() == 'FALSE' else np.nan)
 
     # Handle missing attendance based on availability
     attendance_columns = ['attendanceNineToEleven', 'attendanceElevenToOne', 'attendanceOneToThree',
