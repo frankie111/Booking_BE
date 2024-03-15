@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from firebase import get_auth, get_client
+from firebase import get_auth, get_firestore_db
 
 users = APIRouter()
 
@@ -17,7 +17,7 @@ def register_user(email, password):
 
 def save_user_data(uid, email, name):
     try:
-        db = get_client()
+        db = get_firestore_db()
         user_ref = db.collection('users').document(uid)
         user_ref.set({
             'email': email,
@@ -61,7 +61,7 @@ def delete_user(uid):
         print('Successfully deleted user from Firebase Authentication')
 
         # Delete user data from Firestore
-        db = get_client()
+        db = get_firestore_db()
         user_ref = db.collection('users').document(uid)
         user_ref.delete()
 
