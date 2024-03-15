@@ -8,6 +8,7 @@ from pydantic import BaseModel
 import joblib
 import ssl
 
+from routes.bookings import bookings
 from routes.users import users
 
 app = FastAPI(
@@ -17,6 +18,7 @@ app = FastAPI(
     swagger_ui_parameters={"defaultModelsExpandDepth": -1},
 )
 app.include_router(users)
+app.include_router(bookings)
 
 # ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 # ssl_context.load_cert_chain(

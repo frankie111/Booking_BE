@@ -4,13 +4,10 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class Table(BaseModel):
-    id: Optional[str]
-
-
-class MeetingRoom(BaseModel):
+class Location(BaseModel):
     id: Optional[str]
     capacity: Optional[int]
+    type: Optional[str]
 
 
 class Booking(BaseModel):
