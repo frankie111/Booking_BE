@@ -43,4 +43,4 @@ if __name__ == "__main__":
 
     meeting_rooms_df = preprocess_meeting_room_data(meeting_rooms)
 
-    meeting_rooms_df.to_csv('preprocessed_meeting_room_data.csv', index=False)
+    meeting_rooms_df.to_csv('preprocessed_working_desks_data.csv', index=False)
