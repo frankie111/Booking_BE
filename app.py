@@ -37,3 +37,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],  # Specify which method are allowed
     allow_headers=["X-Requested-With", "Content-Type", "Accept", "Origin", "Authorization"],  # Specific headers allowed
 )
+
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
