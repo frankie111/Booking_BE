@@ -346,7 +346,7 @@ def load_data(filepath):
     df = df.drop(['date'], axis=1)
     return df
 
-def split_data(df, test_size=0.2, random_state=0):
+def split_data(df, test_size=0.5, random_state=0):
     X = df.drop(['firstHalf', 'secondHalf'], axis=1)
     y = df[['firstHalf', 'secondHalf']]
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
@@ -354,15 +354,13 @@ def split_data(df, test_size=0.2, random_state=0):
 
 def build_model():
     model = RandomForestClassifier()
-    parameters = {
-        'n_estimators': [100, 200, 300],
-        'max_depth': [None, 10, 20, 30],
-        'criterion': ['gini', 'entropy']
-    }
-    print("test")
-    cv = GridSearchCV(model, parameters, cv=5)
-    print("test1")
-    return cv
+    # parameters = {
+    #     'n_estimators': [100, 200, 300],
+    #     'max_depth': [None, 10, 20, 30],
+    #     'criterion': ['gini', 'entropy']
+    # }
+    # cv = GridSearchCV(model, parameters, cv=5)
+    return model
 
 def train_model(model, X_train, y_train):
     model.fit(X_train, y_train)

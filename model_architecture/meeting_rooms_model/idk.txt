@@ -1,0 +1,197 @@
+# # #
+# # #
+# # # # def main():
+# # # #     print("Loading data...")
+# # # #     X, y = load_data('preprocessed_meeting_room_data.csv')
+# # # #     X_train, y_train, X_test, y_test = split_data(X, y, test_size=0.1, random_state=0)
+# # # #
+# # # #     print("Training model...")
+# # # #     bst = train_and_evaluate(X_train, y_train, X_test, y_test)
+# # # #
+# # # #     print("Predicting and saving results...")
+# # # #     predict_and_save(bst, X_test, y_test, 'model_predictions.csv')
+# # #
+# # #
+# # # if __name__ == "__main__":
+# # #     main()
+# #
+# #
+# # import pandas as pd
+# # from sklearn.linear_model import LogisticRegression
+# # from sklearn.model_selection import train_test_split
+# # from sklearn.multioutput import MultiOutputClassifier
+# # from sklearn.preprocessing import OneHotEncoder, StandardScaler
+# # from sklearn.compose import ColumnTransformer
+# # from sklearn.pipeline import Pipeline
+# # from xgboost import XGBClassifier
+# # from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+# #
+# #
+# # def load_and_preprocess_data(filepath):
+# #     df = pd.read_csv(filepath)
+# #     # Drop unused features and split into features and targets
+# #     features = df.drop(['date', 'attendanceNineToEleven', 'attendanceElevenToOne', 'attendanceOneToThree', 'attendanceThreeToFive'], axis=1)
+# #     targets = df[['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']]  # Assuming binary [0, 1] indicating booking status
+# #
+# #     # Split into train and test sets
+# #     X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.2, random_state=42)
+# #
+# #     return X_train, X_test, y_train, y_test
+# #
+# # def build_and_train_model(X_train, y_train, X_test, y_test):
+# #     # Preprocessing for numerical features
+# #     numeric_features = ['capacity', 'day_of_week', 'month', 'week_of_year']
+# #     numeric_transformer = Pipeline(steps=[('scaler', StandardScaler())])
+# #
+# #     # Preprocessing for categorical features
+# #     categorical_features = ['room']
+# #     categorical_transformer = Pipeline(steps=[('onehot', OneHotEncoder(handle_unknown='ignore'))])
+# #
+# #     # Combine preprocessing steps
+# #     preprocessor = ColumnTransformer(transformers=[('num', numeric_transformer, numeric_features),
+# #                                                    ('cat', categorical_transformer, categorical_features)])
+# #
+# #     # Define the model pipeline with Logistic Regression
+# #     model = Pipeline(steps=[('preprocessor', preprocessor),
+# #                             ('classifier', MultiOutputClassifier(LogisticRegression(solver='lbfgs', max_iter=1000)))])
+# #
+# #     model.fit(X_train, y_train)
+# #     y_pred = model.predict(X_test)
+# #
+# #     # Evaluate the model
+# #     print("Accuracy:", accuracy_score(y_test, y_pred, normalize=False) / y_test.size)
+# #     print("Classification Report:\n", classification_report(y_test, y_pred, target_names=['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']))
+# #
+# #     return model
+# #
+# # def main():
+# #     filepath = 'preprocessed_meeting_room_data.csv'
+# #     X_train, X_test, y_train, y_test = load_and_preprocess_data(filepath)
+# #     model = build_and_train_model(X_train, y_train, X_test, y_test)
+# #     # Here you can save your model using joblib or pickle for later use in your application
+# #
+# #
+# # if __name__ == "__main__":
+# #     main()
+# #
+#
+#
+# import pandas as pd
+# from sklearn.model_selection import train_test_split
+# from sklearn.preprocessing import OneHotEncoder, StandardScaler
+# from sklearn.compose import ColumnTransformer
+# from sklearn.pipeline import Pipeline
+# from sklearn.metrics import accuracy_score, classification_report
+# from sklearn.multioutput import MultiOutputClassifier
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.ensemble import RandomForestClassifier
+# from xgboost import XGBClassifier
+# from sklearn.svm import SVC
+#
+# def load_and_preprocess_data(filepath):
+#     df = pd.read_csv(filepath)
+#     features = df.drop(['date', 'attendanceNineToEleven', 'attendanceElevenToOne', 'attendanceOneToThree', 'attendanceThreeToFive'], axis=1)
+#     targets = df[['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']]
+#     X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.2, random_state=42)
+#     return X_train, X_test, y_train, y_test
+#
+# def build_pipeline(classifier):
+#     numeric_features = ['capacity', 'day_of_week', 'month', 'week_of_year']
+#     numeric_transformer = Pipeline(steps=[('scaler', StandardScaler())])
+#     categorical_features = ['room']
+#     categorical_transformer = Pipeline(steps=[('onehot', OneHotEncoder(handle_unknown='ignore'))])
+#     preprocessor = ColumnTransformer(transformers=[('num', numeric_transformer, numeric_features), ('cat', categorical_transformer, categorical_features)])
+#     pipeline = Pipeline(steps=[('preprocessor', preprocessor), ('classifier', classifier)])
+#     return pipeline
+#
+# def evaluate_model(model, X_test, y_test):
+#     y_pred = model.predict(X_test)
+#     print("Accuracy:", accuracy_score(y_test, y_pred))
+#     print("Classification Report:\n", classification_report(y_test, y_pred))
+#
+# def main():
+#     filepath = 'preprocessed_meeting_room_data.csv'
+#     X_train, X_test, y_train, y_test = load_and_preprocess_data(filepath)
+#
+#     classifiers = {
+#         "Logistic Regression": MultiOutputClassifier(LogisticRegression(solver='lbfgs', max_iter=1000)),
+#         "Random Forest": MultiOutputClassifier(RandomForestClassifier(n_estimators=100)),
+#         "XGBoost": MultiOutputClassifier(XGBClassifier(use_label_encoder=False, eval_metric='logloss')),
+#         "SVM": MultiOutputClassifier(SVC(probability=True))
+#     }
+#
+#     for name, classifier in classifiers.items():
+#         print(f"Training {name}...")
+#         pipeline = build_pipeline(classifier)
+#         pipeline.fit(X_train, y_train)
+#         print(f"Evaluating {name}...")
+#         evaluate_model(pipeline, X_test, y_test)
+#
+# if __name__ == "__main__":
+#     main()
+#
+
+
+# import pandas as pd
+# from sklearn.model_selection import train_test_split
+# from sklearn.preprocessing import OneHotEncoder, StandardScaler
+# from sklearn.compose import ColumnTransformer
+# from sklearn.pipeline import Pipeline
+# from sklearn.linear_model import LogisticRegression
+# from sklearn.multioutput import MultiOutputClassifier
+# from sklearn.metrics import accuracy_score, classification_report
+#
+#
+# def load_and_preprocess_data(filepath):
+#     df = pd.read_csv(filepath)
+#     features = df.drop(
+#         ['date', 'attendanceNineToEleven', 'attendanceElevenToOne', 'attendanceOneToThree', 'attendanceThreeToFive'],
+#         axis=1)
+#     targets = df[['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']]
+#     X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.2, random_state=42)
+#     return X_train, X_test, y_train, y_test
+#
+#
+# def build_pipeline():
+#     numeric_features = ['capacity', 'day_of_week', 'month', 'week_of_year']
+#     numeric_transformer = Pipeline(steps=[('scaler', StandardScaler())])
+#     categorical_features = ['room']
+#     categorical_transformer = Pipeline(steps=[('onehot', OneHotEncoder(handle_unknown='ignore'))])
+#     preprocessor = ColumnTransformer(transformers=[('num', numeric_transformer, numeric_features),
+#                                                    ('cat', categorical_transformer, categorical_features)])
+#     pipeline = Pipeline(steps=[('preprocessor', preprocessor),
+#                                (
+#                                'classifier', MultiOutputClassifier(LogisticRegression(solver='lbfgs', max_iter=1000)))])
+#     return pipeline
+#
+#
+# def evaluate_and_save_predictions(model, X_test, y_test, filename='predictions.csv'):
+#     y_pred = model.predict(X_test)
+#     accuracy = accuracy_score(y_test, y_pred)
+#     print("Accuracy:", accuracy)
+#     print("Classification Report:\n", classification_report(y_test, y_pred))
+#
+#     # Combine real values and predictions for comparison
+#     comparison_df = pd.concat([y_test.reset_index(drop=True), pd.DataFrame(y_pred, columns=['Pred_nineToEleven',
+#                                                                                             'Pred_elevenToOne',
+#                                                                                             'Pred_oneToThree',
+#                                                                                             'Pred_threeToFive'])],
+#                               axis=1)
+#     comparison_df.to_csv(filename, index=False)
+#     print(f"Predictions saved to {filename}")
+#
+#
+# def main():
+#     filepath = 'preprocessed_meeting_room_data.csv'  # Make sure to update this path to your actual file location
+#     X_train, X_test, y_train, y_test = load_and_preprocess_data(filepath)
+#
+#     model_pipeline = build_pipeline()
+#     print("Training Logistic Regression...")
+#     model_pipeline.fit(X_train, y_train)
+#
+#     print("Evaluating Logistic Regression...")
+#     evaluate_and_save_predictions(model_pipeline, X_test, y_test, 'logistic_regression_predictions.csv')
+#
+#
+# if __name__ == "__main__":
+#     main()
