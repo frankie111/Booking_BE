@@ -1,21 +1,16 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 
-def convert_to_timestamp(date_str, format='%d-%m-%Y %H:%M:%S'):
-    """
-    Convert a date/time string to a Unix timestamp.
+def convert_to_datetime(date_str):
+    # Parse the date string into a datetime object
+    dt_object = datetime.strptime(date_str, "%d-%m-%Y %H:%M:%S")
 
-    Args:
-        date_str (str): The date/time string.
-        format (str): The format of the date/time string. Default is '%Y-%m-%d %H:%M:%S'.
+    # Define the timezone offset (in hours) for your timezone
+    # For example, for Bucharest (UTC+2), the offset is 2 hours
+    timezone_offset_hours = 2
 
-    Returns:
-        int: The Unix timestamp corresponding to the input date/time.
-    """
-    # Parse the date/time string using the specified format
-    dt_obj = datetime.strptime(date_str, format)
+    # Create a timezone-aware datetime object with the specified timezone offset
+    local_timezone = timezone(timedelta(hours=timezone_offset_hours))
+    localized_dt_object = dt_object.replace(tzinfo=local_timezone)
 
-    # Convert the datetime object to a timestamp
-    timestamp = int(dt_obj.timestamp())
-
-    return timestamp
+    return localized_dt_object
