@@ -7,7 +7,6 @@ from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
 from firebase import get_firestore_db
-from utils.utils import convert_to_datetime
 
 bookings = APIRouter()
 
@@ -94,6 +93,32 @@ def add_booking(
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class DeleteBookingResponse(BaseModel):
+    message: str
+
+
+@bookings.delete(
+    "/bookings/{booking_id}",
+    tags=["Bookings"],
+    response_model=DeleteBookingResponse,
+    description="Delete a booking by id"
+)
+def delete_booking(booking_id: str):
+    db = get_firestore_db()
+    # Assuming the booking ID is a valid Firestore document ID
+    booking_ref = db.collection("bookings").document(booking_id)
+
+    # Check if the booking exists
+    booking = booking_ref.get()
+    if not booking.exists:
+        raise HTTPException(status_code=404, detail=f"Booking {booking_id} not found")
+
+    # Delete the booking
+    booking_ref.delete()
+
+    return DeleteBookingResponse(message=f"Booking {booking_id} deleted successfully")
 
 
 def get_overlapping_bookings(loc_id: str, start: datetime, end: datetime):
@@ -238,7 +263,6 @@ async def get_status_for_locations(start: datetime, end: datetime):
     print(f"Execution time: {execution_time} seconds")
 
     return LocationsStatusesResponse(statuses=loc_statuses)
-
 
 # 2024-03-16T09:00:00+0200
 # start = convert_to_datetime("16-03-2024 11:00:00")
