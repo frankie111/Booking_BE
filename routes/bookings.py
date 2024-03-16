@@ -251,8 +251,8 @@ async def get_status_for_locations(start: datetime, end: datetime):
 #     5
 # )
 
-start = convert_to_datetime("16-03-2024 5:00:00")
-end = convert_to_datetime("16-03-2024 18:00:00")
+# start = convert_to_datetime("16-03-2024 5:00:00")
+# end = convert_to_datetime("16-03-2024 18:00:00")
 
 # o_bookings = check_location_availability("Cockpit", start, end)
 # for booking in o_bookings:
