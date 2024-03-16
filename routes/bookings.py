@@ -174,7 +174,28 @@ async def get_active_bookings_for_location(loc_id: str):
     return ActiveBookingsResponse(active_bookings=active_bookings)
 
 
-def get_status_for_locations(start: datetime, end: datetime):
+def check_for_gaps(intervals: list[tuple[datetime, datetime]]):
+    intervals.sort()  # Sort the intervals based on the start time
+    for i in range(1, len(intervals)):
+        prev_end = intervals[i - 1][1]  # End time of the previous interval
+        current_start = intervals[i][0]  # Start time of the current interval
+        if current_start > prev_end:
+            return True
+    # If no gaps are found, you can return True or perform any other desired action
+    return False
+
+
+class LocationsStatusesResponse(BaseModel):
+    statuses: dict[str, str]
+
+
+@bookings.get(
+    "/bookings/",
+    tags=["Bookings"],
+    response_model=LocationsStatusesResponse,
+    description="Get a dict of statuses for all Locations"
+)
+async def get_status_for_locations(start: datetime, end: datetime):
     start_time = time.time()  # Record the start time
     db = get_firestore_db()
     loc_ref = db.collection("locations")
@@ -184,25 +205,39 @@ def get_status_for_locations(start: datetime, end: datetime):
     query = db.collection_group("bookings").where(filter=FieldFilter("end", ">", start)).stream()
     active_bookings = [booking.to_dict() for booking in query]
 
+    loc_statuses = {}
+
     for loc in locations:
-        ov_bookings = get_overlapping_bookings_for_loc(loc.id, active_bookings, start, end)
-        for b in ov_bookings:
-            print(b)
+        loc_id = loc.id
+        ov_bookings = get_overlapping_bookings_for_loc(loc_id, active_bookings, start, end)
+        covered_intervals = []
+        for booking in ov_bookings:
+            booking_start = booking['start'].astimezone()
+            booking_end = booking['end'].astimezone()
+            covered_intervals.append((booking_start, booking_end))
 
-        if len(ov_bookings) > 0:
-            print()
+        if len(covered_intervals) == 0:
+            status = "FREE"
+        else:
+            if check_for_gaps(covered_intervals):
+                status = "PARTIALLY BOOKED"
+            else:
+                min_start = min(covered_intervals, key=lambda x: x[0])[0]
+                max_end = max(covered_intervals, key=lambda x: x[1])[1]
 
-    # for loc in locations:
-    #     loc_dict = loc.to_dict()
-    #     loc_dict["id"] = loc.id
+                # Check if loc is fully booked in the specified time interval
+                if min_start <= start and max_end >= end:
+                    status = "FULLY BOOKED"
+                else:
+                    status = "PARTIALLY BOOKED"
 
-    # overlapping_bookings = get_overlapping_bookings(loc_dict["id"], start, end)
-    # if len(overlapping_bookings) > 0:
-    #     print(f"{loc_dict["id"]} - {len(overlapping_bookings)}")
+        loc_statuses[loc_id] = status
 
     end_time = time.time()  # Record the end time
     execution_time = end_time - start_time
     print(f"Execution time: {execution_time} seconds")
+
+    return LocationsStatusesResponse(statuses=loc_statuses)
 
 
 # 2024-03-16T09:00:00+0200
@@ -216,16 +251,15 @@ def get_status_for_locations(start: datetime, end: datetime):
 #     5
 # )
 
-start = convert_to_datetime("16-03-2024 11:00:00")
-end = convert_to_datetime("16-03-2024 14:00:00")
+start = convert_to_datetime("16-03-2024 5:00:00")
+end = convert_to_datetime("16-03-2024 18:00:00")
+
 # o_bookings = check_location_availability("Cockpit", start, end)
 # for booking in o_bookings:
 #     print(f"{booking["start"]} - {booking["end"]}")
 
 # active_bookings = get_all_active_bookings_for_location("Cockpit")
 # print(active_bookings)
-
-get_status_for_locations(start, end)
 
 # start_time = time.time()  # Record the start time
 
@@ -238,3 +272,5 @@ get_status_for_locations(start, end)
 # end_time = time.time()  # Record the end time
 # execution_time = end_time - start_time
 # print(f"Query Execution time: {execution_time} seconds")
+
+# get_status_for_locations(start, end)
