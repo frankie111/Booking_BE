@@ -1,6 +1,5 @@
 import csv
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from google.cloud.firestore_v1 import FieldFilter
@@ -88,24 +87,6 @@ def add_booking(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# def check_location_availability(loc_id: str, start: datetime, end: datetime):
-#     db = get_firestore_db()
-#     loc_ref = db.collection("locations").document(loc_id)
-#     loc_dict = loc_ref.get()
-#
-#     if not loc_dict.exists:
-#         raise HTTPException(status_code=404, detail="Location does not exist.")
-#
-#     bookings = loc_ref.collection("bookings").stream()
-#     for booking in bookings:
-#         booking_data = booking.to_dict()
-#         booking_start = booking_data['start'].astimezone()
-#         booking_end = booking_data['end'].astimezone()
-#
-#         # Check for overlap
-#         if start < booking_end and end > booking_start:
-#             raise HTTPException(status_code=400, detail="This location is already booked at the specified time")
-
 def get_overlapping_bookings(loc_id: str, start: datetime, end: datetime):
     db = get_firestore_db()
     loc_ref = db.collection("locations").document(loc_id)
@@ -126,6 +107,24 @@ def get_overlapping_bookings(loc_id: str, start: datetime, end: datetime):
 
     return overlapping_bookings
 
+
+def get_all_active_bookings_for_location(loc_id: str):
+    db = get_firestore_db()
+    loc_ref = db.collection("locations").document(loc_id)
+    loc_dict = loc_ref.get()
+
+    if not loc_dict.exists:
+        raise HTTPException(status_code=404, detail="Location does not exist.")
+
+    # Query bookings that end after the current booking should start
+    current_time = datetime.now()
+    query = loc_ref.collection("bookings").where(filter=FieldFilter("end", ">", current_time)).stream()
+
+    # Retrieve the active bookings
+    active_bookings = [doc.to_dict() for doc in query]
+    return active_bookings
+
+
 # 2024-03-16T09:00:00+0200
 # start = convert_to_datetime("16-03-2024 11:00:00")
 # end = convert_to_datetime("16-03-2024 13:00:00")
@@ -142,3 +141,6 @@ def get_overlapping_bookings(loc_id: str, start: datetime, end: datetime):
 # o_bookings = check_location_availability("Cockpit", start, end)
 # for booking in o_bookings:
 #     print(f"{booking["start"]} - {booking["end"]}")
+
+active_bookings = get_all_active_bookings_for_location("Cockpit")
+print(active_bookings)
