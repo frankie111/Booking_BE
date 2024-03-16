@@ -13,6 +13,10 @@ pip install firebase-admin
 pip install joblib
 
 pip install scikit-learn
+---
+pip install python-jose[cryptography]
+
+pip install passlib[bcrypt]
 
 - Add path to firebase credential json file in firebase.py
 
