@@ -122,7 +122,7 @@ def get_all_active_bookings_for_location(loc_id: str):
         raise HTTPException(status_code=404, detail="Location does not exist.")
 
     # Query bookings that end after the current booking should start
-    current_time = datetime.now()
+    current_time = datetime.now().astimezone()
     query = loc_ref.collection("bookings").where(filter=FieldFilter("end", ">", current_time)).stream()
 
     # Retrieve the active bookings with their document IDs
@@ -131,6 +131,8 @@ def get_all_active_bookings_for_location(loc_id: str):
         booking_data = doc.to_dict()
         booking_id = doc.id
         booking_data['id'] = booking_id
+        booking_data['start'] = booking_data['start'].astimezone()
+        booking_data['end'] = booking_data['end'].astimezone()
         active_bookings.append(booking_data)
 
     return active_bookings
