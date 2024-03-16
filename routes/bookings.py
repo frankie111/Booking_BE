@@ -1,4 +1,5 @@
 import csv
+import time
 from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
@@ -6,6 +7,7 @@ from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
 from firebase import get_firestore_db
+from utils.utils import convert_to_datetime
 
 bookings = APIRouter()
 
@@ -97,10 +99,15 @@ def get_overlapping_bookings(loc_id: str, start: datetime, end: datetime):
     loc_ref = db.collection("locations").document(loc_id)
 
     # Query bookings that end after the current booking should start
-    query = loc_ref.collection("bookings").where(filter=FieldFilter("end", ">", start)).stream()
+    docs = loc_ref.collection("bookings").where(filter=FieldFilter("end", ">", start)).stream()
 
+    start_time = time.time()  # Record the start time
     # Retrieve the active bookings
-    active_bookings = [doc.to_dict() for doc in query]
+    active_bookings = [doc.to_dict() for doc in docs]
+
+    end_time = time.time()  # Record the end time
+    execution_time = end_time - start_time
+    print(f"Query Execution time: {execution_time} seconds")
 
     # Check for overlapping bookings
     overlapping_bookings = []
@@ -152,6 +159,34 @@ async def get_active_bookings_for_location(loc_id: str):
     active_bookings = get_all_active_bookings_for_location(loc_id)
     return ActiveBookingsResponse(active_bookings=active_bookings)
 
+
+def get_status_for_locations(start: datetime, end: datetime):
+    start_time = time.time()  # Record the start time
+    db = get_firestore_db()
+    loc_ref = db.collection("locations")
+    locations = loc_ref.stream()
+
+    query = db.collection_group("bookings").where(filter=FieldFilter("end", ">", start)).stream()
+    for doc in query:
+        booking_data = doc.to_dict()
+
+        # Add the document ID to the booking data
+        booking_data["id"] = doc.id
+        print(booking_data)
+
+    # for loc in locations:
+    #     loc_dict = loc.to_dict()
+    #     loc_dict["id"] = loc.id
+
+        # overlapping_bookings = get_overlapping_bookings(loc_dict["id"], start, end)
+        # if len(overlapping_bookings) > 0:
+        #     print(f"{loc_dict["id"]} - {len(overlapping_bookings)}")
+
+    end_time = time.time()  # Record the end time
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time} seconds")
+
+
 # 2024-03-16T09:00:00+0200
 # start = convert_to_datetime("16-03-2024 11:00:00")
 # end = convert_to_datetime("16-03-2024 13:00:00")
@@ -163,11 +198,25 @@ async def get_active_bookings_for_location(loc_id: str):
 #     5
 # )
 
-# start = convert_to_datetime("16-03-2024 8:00:00")
-# end = convert_to_datetime("16-03-2024 9:30:00")
+start = convert_to_datetime("16-03-2024 8:00:00")
+end = convert_to_datetime("16-03-2024 14:00:00")
 # o_bookings = check_location_availability("Cockpit", start, end)
 # for booking in o_bookings:
 #     print(f"{booking["start"]} - {booking["end"]}")
 
 # active_bookings = get_all_active_bookings_for_location("Cockpit")
 # print(active_bookings)
+
+get_status_for_locations(start, end)
+
+# start_time = time.time()  # Record the start time
+
+# db = get_firestore_db()
+# loc_ref = (db.collection("locations").
+#            document("Cockpit").
+#            collection("bookings").
+#            document("w0zI208eCYO6hTELabHF"))
+# doc = loc_ref.get()
+# end_time = time.time()  # Record the end time
+# execution_time = end_time - start_time
+# print(f"Query Execution time: {execution_time} seconds")
