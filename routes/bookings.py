@@ -1,12 +1,12 @@
 import csv
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
 from firebase import get_firestore_db
-from utils.utils import convert_to_datetime
 
 bookings = APIRouter()
 
@@ -30,6 +30,7 @@ def add_locations_from_file():
 
 class AddBookingResponse(BaseModel):
     message: str
+    booking: dict
 
 
 class AddBookingRequest(BaseModel):
@@ -44,42 +45,47 @@ class AddBookingRequest(BaseModel):
 def add_booking(
         req: AddBookingRequest
 ):
-    uid, loc_id, start, end, nr_attend = req
+    try:
+        db = get_firestore_db()
+        loc_ref = db.collection("locations").document(req.loc_id)
+        loc_dict = loc_ref.get()
 
-    db = get_firestore_db()
-    loc_ref = db.collection("locations").document(loc_id)
-    loc_dict = loc_ref.get()
+        if not loc_dict.exists:
+            raise HTTPException(status_code=404, detail="Location does not exist.")
 
-    if not loc_dict.exists:
-        raise HTTPException(status_code=404, detail="Location does not exist.")
+        loc_dict = loc_dict.to_dict()
+        _type = loc_dict["type"]
+        cap = loc_dict["capacity"]
 
-    loc_dict = loc_dict.to_dict()
-    _type = loc_dict["type"]
-    cap = loc_dict["capacity"]
+        # Check if number of attendees is valid
+        if req.nr_attend not in range(1, cap + 1):
+            raise HTTPException(status_code=400, detail=f"Invalid number of attendees.")
 
-    # Check if number of attendees is valid
-    if nr_attend not in range(1, cap + 1):
-        raise ValueError(f"Invalid number of attendees.")
+        # Check if meeting room is less than half-booked
+        if _type == "room" and req.nr_attend < cap / 2:
+            raise HTTPException(status_code=400, detail="Meeting room cannot be less than half-booked.")
 
-    # Check if meeting room is less than half-booked
-    if _type == "room" and nr_attend < cap / 2:
-        raise ValueError("Meeting room cannot be less than half-booked.")
+        overlapping_bookings = get_overlapping_bookings(req.loc_id, req.start, req.end)
+        if len(overlapping_bookings) > 0:
+            raise HTTPException(status_code=400,
+                                detail=f"Requested booking overlaps with {len(overlapping_bookings)} existing booking(s).")
 
-    overlapping_bookings = get_overlapping_bookings(loc_id, start, end)
-    if len(overlapping_bookings) > 0:
-        return
+        book_ref = loc_ref.collection("bookings").document()
+        new_book = {
+            "uid": req.uid,
+            "start": req.start,
+            "end": req.end,
+            "nr_attend": req.nr_attend
+        }
+        book_ref.set(
+            new_book
+        )
 
-# Raise some error or something?
-
-# book_ref = loc_ref.collection("bookings").document()
-# book_ref.set(
-#     {
-#         "uid": uid,
-#         "start": start,
-#         "end": end,
-#         "nr_attend": nr_attend
-#     }
-# )
+        return AddBookingResponse(message=f"Added booking {book_ref.id}", booking=new_book)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # def check_location_availability(loc_id: str, start: datetime, end: datetime):
@@ -120,7 +126,7 @@ def get_overlapping_bookings(loc_id: str, start: datetime, end: datetime):
 
     return overlapping_bookings
 
-
+# 2024-03-16T09:00:00+0200
 # start = convert_to_datetime("16-03-2024 11:00:00")
 # end = convert_to_datetime("16-03-2024 13:00:00")
 # add_booking(
