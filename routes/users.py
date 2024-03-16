@@ -39,7 +39,12 @@ class AddUserModelRequest(BaseModel):
     password: str
 
 
-@users.post("/user/", response_model=AddUserModelResponse)
+@users.post(
+    "/user/",
+    tags=["Users"],
+    response_model=AddUserModelResponse,
+    description="Register a new user"
+)
 async def add_user(
         req: AddUserModelRequest
 ):
@@ -53,7 +58,12 @@ class DeleteUserModelResponse(BaseModel):
     message: str
 
 
-@users.delete("/user/", response_model=DeleteUserModelResponse)
+@users.delete(
+    "/user/",
+    tags=["Users"],
+    response_model=DeleteUserModelResponse,
+    description="Delete a user by id"
+)
 def delete_user(uid):
     try:
         # Delete user from Firebase Authentication

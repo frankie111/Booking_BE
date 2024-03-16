@@ -40,7 +40,12 @@ class AddBookingRequest(BaseModel):
     nr_attend: int
 
 
-@bookings.post("/bookings/", response_model=AddBookingResponse)
+@bookings.post(
+    "/bookings/",
+    tags=["Bookings"],
+    response_model=AddBookingResponse,
+    description="Add a new booking. Checks for overlapping bookings for the location at the given time"
+)
 def add_booking(
         req: AddBookingRequest
 ):
@@ -135,7 +140,12 @@ class ActiveBookingsResponse(BaseModel):
     active_bookings: list[dict]
 
 
-@bookings.get("/bookings/{loc_id}/active", response_model=ActiveBookingsResponse)
+@bookings.get(
+    "/bookings/{loc_id}/active",
+    tags=["Bookings"],
+    response_model=ActiveBookingsResponse,
+    description="Get all active bookings for the specified location"
+)
 async def get_active_bookings_for_location(loc_id: str):
     active_bookings = get_all_active_bookings_for_location(loc_id)
     return ActiveBookingsResponse(active_bookings=active_bookings)
