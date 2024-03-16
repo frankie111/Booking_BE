@@ -81,11 +81,13 @@ def add_booking(
             "uid": req.uid,
             "start": req.start,
             "end": req.end,
-            "nr_attend": req.nr_attend
+            "nr_attend": req.nr_attend,
+            "loc_id": req.loc_id
         }
         book_ref.set(
             new_book
         )
+        book_ref.update({"id": book_ref.id})
 
         return AddBookingResponse(message=f"Added booking {book_ref.id}", booking=new_book)
     except HTTPException as e:
@@ -112,6 +114,18 @@ def get_overlapping_bookings(loc_id: str, start: datetime, end: datetime):
     # Check for overlapping bookings
     overlapping_bookings = []
     for booking in active_bookings:
+        booking_start = booking['start'] = booking['start'].astimezone()
+        booking_end = booking['end'] = booking['end'].astimezone()
+        if start < booking_end and end > booking_start:
+            overlapping_bookings.append(booking)
+
+    return overlapping_bookings
+
+
+def get_overlapping_bookings_for_loc(loc_id: str, bookings: list[dict], start: datetime, end: datetime):
+    overlapping_bookings = []
+    bookings = [booking for booking in bookings if booking.get('loc_id') == loc_id]
+    for booking in bookings:
         booking_start = booking['start'] = booking['start'].astimezone()
         booking_end = booking['end'] = booking['end'].astimezone()
         if start < booking_end and end > booking_start:
@@ -166,21 +180,25 @@ def get_status_for_locations(start: datetime, end: datetime):
     loc_ref = db.collection("locations")
     locations = loc_ref.stream()
 
+    # Get all active bookings
     query = db.collection_group("bookings").where(filter=FieldFilter("end", ">", start)).stream()
-    for doc in query:
-        booking_data = doc.to_dict()
+    active_bookings = [booking.to_dict() for booking in query]
 
-        # Add the document ID to the booking data
-        booking_data["id"] = doc.id
-        print(booking_data)
+    for loc in locations:
+        ov_bookings = get_overlapping_bookings_for_loc(loc.id, active_bookings, start, end)
+        for b in ov_bookings:
+            print(b)
+
+        if len(ov_bookings) > 0:
+            print()
 
     # for loc in locations:
     #     loc_dict = loc.to_dict()
     #     loc_dict["id"] = loc.id
 
-        # overlapping_bookings = get_overlapping_bookings(loc_dict["id"], start, end)
-        # if len(overlapping_bookings) > 0:
-        #     print(f"{loc_dict["id"]} - {len(overlapping_bookings)}")
+    # overlapping_bookings = get_overlapping_bookings(loc_dict["id"], start, end)
+    # if len(overlapping_bookings) > 0:
+    #     print(f"{loc_dict["id"]} - {len(overlapping_bookings)}")
 
     end_time = time.time()  # Record the end time
     execution_time = end_time - start_time
@@ -198,7 +216,7 @@ def get_status_for_locations(start: datetime, end: datetime):
 #     5
 # )
 
-start = convert_to_datetime("16-03-2024 8:00:00")
+start = convert_to_datetime("16-03-2024 11:00:00")
 end = convert_to_datetime("16-03-2024 14:00:00")
 # o_bookings = check_location_availability("Cockpit", start, end)
 # for booking in o_bookings:
