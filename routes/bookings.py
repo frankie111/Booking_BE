@@ -120,10 +120,25 @@ def get_all_active_bookings_for_location(loc_id: str):
     current_time = datetime.now()
     query = loc_ref.collection("bookings").where(filter=FieldFilter("end", ">", current_time)).stream()
 
-    # Retrieve the active bookings
-    active_bookings = [doc.to_dict() for doc in query]
+    # Retrieve the active bookings with their document IDs
+    active_bookings = []
+    for doc in query:
+        booking_data = doc.to_dict()
+        booking_id = doc.id
+        booking_data['id'] = booking_id
+        active_bookings.append(booking_data)
+
     return active_bookings
 
+
+class ActiveBookingsResponse(BaseModel):
+    active_bookings: list[dict]
+
+
+@bookings.get("/bookings/{loc_id}/active", response_model=ActiveBookingsResponse)
+async def get_active_bookings_for_location(loc_id: str):
+    active_bookings = get_all_active_bookings_for_location(loc_id)
+    return ActiveBookingsResponse(active_bookings=active_bookings)
 
 # 2024-03-16T09:00:00+0200
 # start = convert_to_datetime("16-03-2024 11:00:00")
@@ -142,5 +157,5 @@ def get_all_active_bookings_for_location(loc_id: str):
 # for booking in o_bookings:
 #     print(f"{booking["start"]} - {booking["end"]}")
 
-active_bookings = get_all_active_bookings_for_location("Cockpit")
-print(active_bookings)
+# active_bookings = get_all_active_bookings_for_location("Cockpit")
+# print(active_bookings)

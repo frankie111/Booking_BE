@@ -5,21 +5,21 @@ from pydantic import BaseModel
 
 
 class Location(BaseModel):
-    id: Optional[str]
-    capacity: Optional[int]
-    type: Optional[str]
+    id: str
+    capacity: int
+    type: str
 
 
 class Booking(BaseModel):
-    uid: Optional[str]
-    loc_id: Optional[str]  # location (table/conference room)
-    start: Optional[datetime]
-    end: Optional[datetime]
-    nr_attend: Optional[int]
+    uid: str
+    loc_id: str  # location (table/conference room)
+    start: datetime
+    end: datetime
+    nr_attend: int
 
 
 class User(BaseModel):
-    uid: Optional[str]
-    name: Optional[str]
-    email: Optional[str]
-    is_admin: Optional[bool]
+    uid: str
+    name: Optional[str] = None
+    email: str
+    is_admin: bool = False
