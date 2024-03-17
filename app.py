@@ -31,6 +31,9 @@ origins = [
     'http://127.0.0.1:3000'
 ]
 
+
+model = joblib.load("model_architecture/meeting_rooms_model/model_test_fewer_features.pkl")
+
 # Set up CORS middleware to allow cross-origin requests from the defined origins.
 app.add_middleware(
     CORSMiddleware,

@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -23,3 +24,8 @@ class User(BaseModel):
     name: Optional[str] = None
     email: str
     is_admin: bool = False
+
+
+class RoomAvailabilityRequest(BaseModel):
+    date: date
+    room_name: str

@@ -1,15 +1,21 @@
 import csv
 import time
 from datetime import datetime
+from typing import Dict
 
+import joblib
+import pandas as pd
 from fastapi import APIRouter, HTTPException
 from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
 from firebase import get_firestore_db
+from models import RoomAvailabilityRequest
 from utils.utils import convert_to_datetime
 
 bookings = APIRouter()
+
+model = joblib.load("model_architecture/meeting_rooms_model/model_test_fewer_features.pkl")
 
 
 def add_locations_from_file():
@@ -274,3 +280,39 @@ async def get_status_for_locations(start: datetime, end: datetime):
 # print(f"Query Execution time: {execution_time} seconds")
 
 # get_status_for_locations(start, end)
+
+room_mapping = {
+    'Pit-Lane': 0,
+    'Dry-lane': 1,
+    'Joker Lap': 2,
+    'Quick 8': 3,
+    'Pole Position': 4,
+    'Cockpit': 5,
+}
+def prepare_input_data(request_date, room_name):
+    # Extract features from date
+    date_parsed = pd.to_datetime(request_date)
+    day_of_week = date_parsed.dayofweek
+    month = date_parsed.month
+    week_of_year = date_parsed.isocalendar()[1]
+
+    # Map room_name to its code
+    if room_name in room_mapping:
+        room_code = room_mapping[room_name]
+    else:
+        raise ValueError("Room name not recognized.")
+
+    # Prepare input data in the same order as during training
+    input_data = [day_of_week, month, week_of_year, room_code]
+    return input_data
+
+@bookings.post("/predict-availability/", response_model=Dict[str, str])
+def predict_availability(request: RoomAvailabilityRequest):
+    try:
+        # Assuming you've implemented prepare_input_data function
+        input_data = prepare_input_data(request.date, request.room_name)
+        prediction = model.predict([input_data])[0]
+        availability = "Available" if prediction == 1 else "Not Available"
+        return {"availability": availability}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
