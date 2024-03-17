@@ -31,10 +31,11 @@ class User(BaseModel):
 #     room_name: str
 
 
-
-
 class RoomAvailabilityRequest(BaseModel):
     date: date
     room_name: str
+
+class RoomAvailabilityResponse(BaseModel):
+    date: str
+    room_name: str
     availability: Dict[str, str]
-    # interval: str  # Add this line

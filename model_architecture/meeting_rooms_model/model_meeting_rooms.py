@@ -205,13 +205,13 @@ def main():
     # Saving the trained model to a file
     # joblib.dump(model, 'multioutput_model.pkl')
 
-    with open('multioutput_model.pkl', 'wb') as file:
-        pickle.dump(model, file)
-    print("Multi-output model saved to multioutput_model.pkl")
+    # with open('multioutput_model.pkl', 'wb') as file:
+    #     pickle.dump(model, file)
+    # print("Multi-output model saved to multioutput_model.pkl")
 
     # Making predictions on the test set
     predictions = model.predict(X_test)
-
+    print(predictions)
     # Evaluating and printing model accuracy
     evaluate_model(model, X_test, y_test)
 
@@ -221,8 +221,8 @@ def main():
     final_results = pd.concat([results, results_pred], axis=1)
 
     # Saving predictions to CSV
-    final_results.to_csv('predictions_test.csv', index=False)
-    print("Predictions and actual values saved to predictions_test.csv")
+    # final_results.to_csv('predictions_test.csv', index=False)
+    # print("Predictions and actual values saved to predictions_test.csv")
 
 if __name__ == '__main__':
     main()

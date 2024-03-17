@@ -4,13 +4,14 @@ from datetime import datetime
 from typing import Dict
 
 import joblib
+import numpy as np
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
 from firebase import get_firestore_db
-from models import RoomAvailabilityRequest
+from models import RoomAvailabilityRequest, RoomAvailabilityResponse
 from utils.utils import convert_to_datetime
 
 bookings = APIRouter()
@@ -289,49 +290,7 @@ room_mapping = {
     'Pole Position': 4,
     'Cockpit': 5,
 }
-# def prepare_input_data(request_date, room_name):
-#     # Extract features from date
-#     date_parsed = pd.to_datetime(request_date)
-#     day_of_week = date_parsed.dayofweek
-#     month = date_parsed.month
-#     week_of_year = date_parsed.isocalendar()[1]
-#
-#     # Map room_name to its code
-#     if room_name in room_mapping:
-#         room_code = room_mapping[room_name]
-#     else:
-#         raise ValueError("Room name not recognized.")
-#
-#     # Prepare input data in the same order as during training
-#     input_data = [day_of_week, month, week_of_year, room_code]
-#     return input_data
-#
-# @bookings.post("/predict-availability/", response_model=Dict[str, str])
-# def predict_availability(request: RoomAvailabilityRequest):
-#     try:
-#         # Assuming you've implemented prepare_input_data function
-#         input_data = prepare_input_data(request.date, request.room_name)
-#         prediction = model.predict([input_data])[0]
-#         availability = "Available" if prediction == 1 else "Not Available"
-#         return {"availability": availability}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
-
-# def prepare_input_data(request_date, room_name, interval):
-#     date_parsed = pd.to_datetime(request_date)
-#     day_of_week = date_parsed.dayofweek
-#     month = date_parsed.month
-#     week_of_year = date_parsed.isocalendar()[1]
-#
-#     if room_name in room_mapping:
-#         room_code = room_mapping[room_name]
-#     else:
-#         raise ValueError("Room name not recognized.")
-#
-#     # Assuming interval is directly usable by the model (ensure this matches your model's training)
-#     input_data = [day_of_week, month, week_of_year, room_code, interval]
-#     return input_data
 
 def prepare_input_data(request_date, room_name):
     date_parsed = pd.to_datetime(request_date)
@@ -339,110 +298,39 @@ def prepare_input_data(request_date, room_name):
     month = date_parsed.month
     week_of_year = date_parsed.isocalendar()[1]
 
-    if room_name in room_mapping:
-        room_code = room_mapping[room_name]
-    else:
-        raise ValueError("Room name not recognized.")
+    room_code = room_mapping.get(room_name)
+    if room_code is None:
+        raise ValueError(f"Room name '{room_name}' not recognized.")
 
-    # Prepare input data excluding interval since we are now predicting for all intervals
+    # This should produce a 1D array (or list) for a single sample
     input_data = [day_of_week, month, week_of_year, room_code]
-    return input_data
+    return input_data  # Not wrapping in another list here
 
 
 
-# @bookings.post("/predict-availability/", response_model=Dict[str, str])
-# def predict_availability(request: RoomAvailabilityRequest):
-#     try:
-#         # Update to include interval in the preparation
-#         input_data = prepare_input_data(request.date, request.room_name, request.interval)
-#         # Prediction now returns predictions for each interval
-#         predictions = model.predict([input_data])[0]
-#         availability_statuses = ['Not Available' if pred == 0 else 'Available' for pred in predictions]
-#
-#         # Map interval names to their predictions for response
-#         interval_names = ['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']
-#         availability = dict(zip(interval_names, availability_statuses))
-#
-#         return {"date": request.date, "room_name": request.room_name, "availability": availability}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @bookings.post("/predict-availability/", response_model=Dict[str, Dict[str, str]])
-# def predict_availability(request: RoomAvailabilityRequest):
-#     try:
-#         # Generate features from the request data without needing the interval
-#         input_data = prepare_input_data(request.date, request.room_name)
-#
-#         # Predict using the model which now predicts for all intervals
-#         predictions = model.predict([input_data])
-#
-#         # Make sure predictions are in a suitable format for iteration
-#         if predictions.ndim == 1:
-#             predictions = [predictions]  # Wrap in another list if single dimension
-#
-#         interval_names = ['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']
-#         availability_statuses = []
-#
-#         # Assuming the model correctly predicts multiple outputs for the input
-#         for interval_index, pred in enumerate(predictions[0]):
-#             status = "Available" if pred == 1 else "Not Available"
-#             availability_statuses.append(status)
-#
-#         availability = dict(zip(interval_names, availability_statuses))
-#
-#         return {"date": request.date.strftime("%Y-%m-%d"), "room_name": request.room_name, "availability": availability}
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-# @bookings.post("/predict-availability/", response_model=RoomAvailabilityRequest)
-# def predict_availability(request: RoomAvailabilityRequest):
-#     try:
-#         # Generate features from the request data without needing the interval
-#         input_data = prepare_input_data(request.date, request.room_name)
-#
-#         # Predict using the model which now predicts for all intervals
-#         predictions = model.predict([input_data])
-#
-#         # Assuming predictions are in the correct format (an array of predictions per interval)
-#         if predictions.ndim == 1:
-#             predictions = [predictions]  # Ensure it's a list of lists for consistency
-#
-#         interval_names = ['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']
-#         availability_statuses = ["Available" if pred == 1 else "Not Available" for pred in predictions[0]]
-#
-#         availability = dict(zip(interval_names, availability_statuses))
-#
-#         return {
-#             "date": request.date.strftime("%Y-%m-%d"),
-#             "room_name": request.room_name,
-#             "availability": availability
-#         }
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
-@bookings.post("/predict-availability/", response_model=RoomAvailabilityRequest)
-def predict_availability(request: RoomAvailabilityRequest):
+@bookings.post("/predict-availability/", response_model=RoomAvailabilityResponse)
+async def predict_availability(request: RoomAvailabilityRequest):
     try:
-        # Generate features from the request data without needing the interval
-        input_data = prepare_input_data(request.date, request.room_name)
+        input_data = prepare_input_data(request.date.isoformat(), request.room_name)
+        prediction = model.predict([input_data])[0]  # Get the single prediction
 
-        # Predict using the model which now predicts for all intervals
-        predictions = model.predict([input_data])
+        # Ensure the prediction is a single value
+        assert isinstance(prediction, (int, np.int64)), "Prediction is not a single value"
 
-        # Assuming predictions are in the correct format (an array of predictions per interval)
-        if predictions.ndim == 1:
-            predictions = [predictions]  # Ensure it's a list of lists for consistency
-
-        interval_names = ['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']
-        availability_statuses = ["Available" if pred == 1 else "Not Available" for pred in predictions[0]]
-
-        availability = dict(zip(interval_names, availability_statuses))
+        availability = "Available" if prediction == 1 else "Not Available"
 
         return {
             "date": request.date.strftime("%Y-%m-%d"),
             "room_name": request.room_name,
-            "availability": availability
+            "availability": {
+                'nineToEleven': availability,
+                'elevenToOne': availability,
+                'oneToThree': availability,
+                'threeToFive': availability
+            }
         }
+    except AssertionError as ae:
+        # Handling the case where the model does not return a single prediction
+        raise HTTPException(status_code=500, detail=str(ae))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
