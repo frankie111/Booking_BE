@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
 from datetime import date, datetime
 
 from pydantic import BaseModel
@@ -26,6 +26,15 @@ class User(BaseModel):
     is_admin: bool = False
 
 
+# class RoomAvailabilityRequest(BaseModel):
+#     date: date
+#     room_name: str
+
+
+
+
 class RoomAvailabilityRequest(BaseModel):
     date: date
     room_name: str
+    availability: Dict[str, str]
+    # interval: str  # Add this line

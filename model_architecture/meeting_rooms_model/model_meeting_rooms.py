@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix
 import pickle
 import matplotlib.pyplot as plt
+from sklearn.multioutput import MultiOutputClassifier
 from xgboost import XGBClassifier
 from sklearn.svm import SVC
 
@@ -29,16 +30,21 @@ def plot_history(history):
 
 def load_data(filepath):
     df = pd.read_csv(filepath)
+    df['room'] = df['room'].astype('category').cat.codes
 
     # Preparing input features.
-    X = df[['capacity', 'day_of_week', 'month', 'week_of_year', 'total_booked_desks_first_half',
-              'total_booked_desks_second_half', 'room']]
+    X = df[['day_of_week', 'month', 'week_of_year', 'room']]
 
     # Preparing separate target variables for each time slot.
     y = df[['nineToEleven', 'elevenToOne', 'oneToThree', 'threeToFive']]
 
     return X, y
 
+def train_multioutput_model(X, y):
+    base_rf = RandomForestClassifier(n_estimators=100, random_state=42)
+    multi_output_rf = MultiOutputClassifier(base_rf, n_jobs=-1)
+    multi_output_rf.fit(X, y)
+    return multi_output_rf
 
 # Function to split data into training and testing sets
 def split_data(X, y, test_size=0.1, random_state=0):
@@ -63,6 +69,7 @@ def evaluate_model(model, X_test, y_test, time_slot):
     accuracy = accuracy_score(y_test, predictions)
     print(f'{time_slot} Accuracy: {accuracy}')
     print(confusion_matrix(y_test, predictions))
+    print(predictions)
 
 
 # Function to perform k-fold cross-validation
@@ -86,6 +93,23 @@ def k_fold_cross_validation(X, y, n_splits=5):
 def build_model():
     return RandomForestClassifier(random_state=0)
 
+
+def evaluate_model(model, X_test, y_test):
+    predictions = model.predict(X_test)
+
+    # Initialize an accuracy list
+    accuracies = []
+
+    # Loop through each interval (column) in y_test
+    for i in range(y_test.shape[1]):
+        interval_name = y_test.columns[i]
+        interval_accuracy = accuracy_score(y_test.iloc[:, i], predictions[:, i])
+        accuracies.append(interval_accuracy)
+        print(f"Accuracy for {interval_name}: {interval_accuracy:.4f}")
+
+    # Optionally, you could return the accuracies if you want to use them elsewhere
+    return accuracies
+
 def perform_grid_search(X_train, y_train):
     # Define a parameter grid to search
     param_grid = {
@@ -108,53 +132,97 @@ def perform_grid_search(X_train, y_train):
     # Return the best estimator
     return grid_search.best_estimator_
 
-def main():
-    filepath = 'preprocessed_month_categorical.csv'
-    X, y = load_data(filepath)
-
-    models = {}
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
-    y_test_results = pd.DataFrame(index=X_test.index)
-
-    for time_slot in y.columns:
-        model = SVC()
-        model.fit(X_train, y_train[time_slot])
-        models[time_slot] = model
-
-        print(f"Evaluating model for {time_slot}:")
-        evaluate_model(model, X_test, y_test[time_slot], time_slot)
-
-        y_test_results[f'Predicted_{time_slot}'] = model.predict(X_test)
-
-    predictions_filename = 'predictions_test.csv'
-    y_test_results.to_csv(predictions_filename, index=False)
-    print(f"Predictions saved to {predictions_filename}")
-
-
 # def main():
-#     filepath = 'preprocessed_month_categorical.csv'
+#     # filepath = 'preprocessed_month_categorical.csv'
+#     filepath = 'merged_data.csv'
 #     X, y = load_data(filepath)
 #
 #     models = {}
-#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0, stratify=y)
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0, stratify=y)
 #     y_test_results = pd.DataFrame(index=X_test.index)
 #
 #     for time_slot in y.columns:
-#         # Perform grid search to find the best model
-#         best_model = perform_grid_search(X_train, y_train[time_slot])
-#         models[time_slot] = best_model
+#         model = SVC()
+#         model.fit(X_train, y_train[time_slot])
+#         models[time_slot] = model
 #
 #         print(f"Evaluating model for {time_slot}:")
-#         evaluate_model(best_model, X_test, y_test[time_slot], time_slot)
+#         evaluate_model(model, X_test, y_test[time_slot], time_slot)
 #
-#         y_test_results[f'Predicted_{time_slot}'] = best_model.predict(X_test)
+#         y_test_results[f'Predicted_{time_slot}'] = model.predict(X_test)
 #
 #     predictions_filename = 'predictions_test.csv'
 #     y_test_results.to_csv(predictions_filename, index=False)
 #     print(f"Predictions saved to {predictions_filename}")
+
+
+# def main():
+#     filepath = 'merged_data.csv'
+#     X, y = load_data(filepath)
 #
-# if __name__ == '__main__':
+#     models = {}
+#     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5, random_state=0, stratify=y)
+#
+#
+#     model = train_multioutput_model(X_train, y_train)
+#
+#     evaluate_model(model, X_test, y_test)
+#     y_test_results = pd.DataFrame(index=X_test.index)
+#
+#
+#     # with open('multioutput_model.pkl', 'wb') as file:
+#     #     pickle.dump(model, file)
+#     # print("Multi-output model saved to multioutput_model.pkl")
+#
+#     # for time_slot in y.columns:
+#     #     # Perform grid search to find the best model
+#     #     best_model = perform_grid_search(X_train, y_train[time_slot])
+#     #     models[time_slot] = best_model
+#     #
+#     #     print(f"Evaluating model for {time_slot}:")
+#     #     evaluate_model(best_model, X_test, y_test[time_slot], time_slot)
+#     #
+#     #     y_test_results[f'Predicted_{time_slot}'] = best_model.predict(X_test)
+#
+#     predictions_filename = 'predictions_test.csv'
+#     y_test_results.to_csv(predictions_filename, index=False)
+#     print(f"Predictions saved to {predictions_filename}")
+# #
+# # if __name__ == '__main__':
 #     main()
+
+
+def main():
+    filepath = 'merged_data.csv'
+    X, y = load_data(filepath)
+
+    # Splitting data into training and testing sets
+    X_train, X_test, y_train, y_test = split_data(X, y, test_size=0.2, random_state=42)
+
+    # Training a multi-output model
+    model = train_multioutput_model(X_train, y_train)
+
+    # Saving the trained model to a file
+    # joblib.dump(model, 'multioutput_model.pkl')
+
+    with open('multioutput_model.pkl', 'wb') as file:
+        pickle.dump(model, file)
+    print("Multi-output model saved to multioutput_model.pkl")
+
+    # Making predictions on the test set
+    predictions = model.predict(X_test)
+
+    # Evaluating and printing model accuracy
+    evaluate_model(model, X_test, y_test)
+
+    # Preparing DataFrame with actual and predicted values
+    results = pd.DataFrame(y_test).reset_index(drop=True)
+    results_pred = pd.DataFrame(predictions, columns=[f'Predicted_{col}' for col in y_test.columns])
+    final_results = pd.concat([results, results_pred], axis=1)
+
+    # Saving predictions to CSV
+    final_results.to_csv('predictions_test.csv', index=False)
+    print("Predictions and actual values saved to predictions_test.csv")
 
 if __name__ == '__main__':
     main()
