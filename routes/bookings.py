@@ -2,11 +2,11 @@ import csv
 import time
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
-from firebase import get_firestore_db
+from firebase import get_firestore_db, get_current_user
 
 bookings = APIRouter()
 
@@ -105,18 +105,19 @@ class DeleteBookingResponse(BaseModel):
     response_model=DeleteBookingResponse,
     description="Delete a booking by id"
 )
-def delete_booking(booking_id: str):
-    db = get_firestore_db()
-    # Assuming the booking ID is a valid Firestore document ID
-    booking_ref = db.collection("bookings").document(booking_id)
+async def delete_booking(booking_id: str, current_user: dict = Depends(get_current_user)):
 
-    # Check if the booking exists
-    booking = booking_ref.get()
-    if not booking.exists:
-        raise HTTPException(status_code=404, detail=f"Booking {booking_id} not found")
-
-    # Delete the booking
-    booking_ref.delete()
+    # db = get_firestore_db()
+    # # Assuming the booking ID is a valid Firestore document ID
+    # booking_ref = db.collection("bookings").document(booking_id)
+    #
+    # # Check if the booking exists
+    # booking = booking_ref.get()
+    # if not booking.exists:
+    #     raise HTTPException(status_code=404, detail=f"Booking {booking_id} not found")
+    #
+    # # Delete the booking
+    # booking_ref.delete()
 
     return DeleteBookingResponse(message=f"Booking {booking_id} deleted successfully")
 
