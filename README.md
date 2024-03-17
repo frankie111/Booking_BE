@@ -1,30 +1,20 @@
 # Booking_BE
 
-## Run following commands to setup the project:
+## To set up the project:
 
-pip install fastapi
+pip install -r requirements.txt
 
-pip install fastapi[all]
-
-pip install "uvicorn[standard]"
-
-pip install firebase-admin
-
-pip install joblib
-
-pip install scikit-learn
----
-pip install python-jose[cryptography]
-
-pip install passlib[bcrypt]
-
-- Add path to firebase credential json file in firebase.py
+- Add firebase credential json file in project root
 
 ## Running the project
 
+### For HTTP:
+
 uvicorn app:app --reload
 
+### For HTTPS:
 
+python app.py
 
 [//]: # (pip install fastapi uvicorn[standard] cryptography)
 
