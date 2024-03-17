@@ -105,19 +105,19 @@ class DeleteBookingResponse(BaseModel):
     response_model=DeleteBookingResponse,
     description="Delete a booking by id"
 )
-async def delete_booking(booking_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_booking(loc_id: str, booking_id: str, uid: str):
+    db = get_firestore_db()
+    booking_ref = db.collection("locations").document(loc_id).collection("bookings").document(booking_id)
 
-    # db = get_firestore_db()
-    # # Assuming the booking ID is a valid Firestore document ID
-    # booking_ref = db.collection("bookings").document(booking_id)
-    #
-    # # Check if the booking exists
-    # booking = booking_ref.get()
-    # if not booking.exists:
-    #     raise HTTPException(status_code=404, detail=f"Booking {booking_id} not found")
-    #
-    # # Delete the booking
-    # booking_ref.delete()
+    booking = booking_ref.get()
+    if not booking.exists:
+        raise HTTPException(status_code=404, detail=f"Booking {booking_id} not found")
+
+    booking_dict = booking.to_dict()
+    if booking_dict["uid"] != uid:
+        raise HTTPException(status_code=403, detail="You do not have permission to delete this booking")
+
+    booking_ref.delete()
 
     return DeleteBookingResponse(message=f"Booking {booking_id} deleted successfully")
 
