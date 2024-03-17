@@ -129,13 +129,8 @@ def get_overlapping_bookings(loc_id: str, start: datetime, end: datetime):
     # Query bookings that end after the current booking should start
     docs = loc_ref.collection("bookings").where(filter=FieldFilter("end", ">", start)).stream()
 
-    start_time = time.time()  # Record the start time
     # Retrieve the active bookings
     active_bookings = [doc.to_dict() for doc in docs]
-
-    end_time = time.time()  # Record the end time
-    execution_time = end_time - start_time
-    print(f"Query Execution time: {execution_time} seconds")
 
     # Check for overlapping bookings
     overlapping_bookings = []

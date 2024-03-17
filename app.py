@@ -44,3 +44,12 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
+
+
+if __name__ == '__main__':
+    uvicorn.run("app:app",
+                host="localhost",
+                port=8000,
+                reload=True,
+                ssl_keyfile="C:/Windows/System32/localhost+2-key.pem",
+                ssl_certfile="C:/Windows/System32/localhost+2.pem")
