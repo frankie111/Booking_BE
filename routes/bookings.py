@@ -7,6 +7,7 @@ from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
 from firebase import get_firestore_db, get_current_user
+from models import Booking
 
 bookings = APIRouter()
 
@@ -181,7 +182,7 @@ def get_all_active_bookings_for_location(loc_id: str):
 
 
 class ActiveBookingsResponse(BaseModel):
-    active_bookings: list[dict]
+    active_bookings: list[Booking]
 
 
 @bookings.get(
@@ -206,12 +207,30 @@ def check_for_gaps(intervals: list[tuple[datetime, datetime]]):
     return False
 
 
+class BookingsResponse(BaseModel):
+    bookings: list[Booking]
+
+
+@bookings.get(
+    "/bookings/",
+    tags=["Bookings"],
+    response_model=BookingsResponse,
+    description="Get all Bookings"
+)
+async def get_all_bookings():
+    db = get_firestore_db()
+    bookings_ref = db.collection_group("bookings").stream()
+    bookings = [booking.to_dict() for booking in bookings_ref]
+
+    return BookingsResponse(bookings=bookings)
+
+
 class LocationsStatusesResponse(BaseModel):
     statuses: dict[str, str]
 
 
 @bookings.get(
-    "/bookings/",
+    "/bookings/status",
     tags=["Bookings"],
     response_model=LocationsStatusesResponse,
     description="Get a dict of statuses for all Locations"
