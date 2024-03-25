@@ -28,7 +28,8 @@ app.include_router(bookings)
 
 origins = [
     'http://localhost:3000',
-    'http://127.0.0.1:3000'
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
 ]
 
 # Set up CORS middleware to allow cross-origin requests from the defined origins.
