@@ -266,7 +266,9 @@ async def get_status_for_locations(
         start: datetime = Query(None, description="Start of the interval in ISO 8601 format"),
         end: datetime = Query(None, description="End of the interval in ISO 8601 format"),
         user: User = Depends(verify_token)):
-    start_time = time.time()  # Record the start time
+    start = start.astimezone()
+    end = end.astimezone()
+    print(f"{start} - {end}")
     db = get_firestore_db()
     loc_ref = db.collection("locations")
     locations = loc_ref.stream()
@@ -302,10 +304,6 @@ async def get_status_for_locations(
                     status = "PARTIALLY BOOKED"
 
         loc_statuses[loc_id] = status
-
-    end_time = time.time()  # Record the end time
-    execution_time = end_time - start_time
-    print(f"Execution time: {execution_time} seconds")
 
     return LocationsStatusesResponse(statuses=loc_statuses)
 
