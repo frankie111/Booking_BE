@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
-from firebase import get_firestore_db, get_current_user
+from firebase import get_firestore_db
 from models import Booking
 
 bookings = APIRouter()
@@ -41,9 +41,20 @@ class AddBookingRequest(BaseModel):
     end: datetime
     nr_attend: int
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "uid": "SeqLN0T2PKNh4rOIIxbP70lEc4E3",
+                "loc_id": "CLUJ_5_beta_1.1",
+                "start": "2024-05-15T09:00:00+0200",
+                "end": "2024-05-15T11:00:00+0200",
+                "nr_attend": 1
+            }
+        }
+
 
 @bookings.post(
-    "/bookings/",
+    "/booking/",
     tags=["Bookings"],
     response_model=AddBookingResponse,
     description="Add a new booking. Checks for overlapping bookings for the location at the given time"

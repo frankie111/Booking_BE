@@ -1,12 +1,6 @@
-from typing import Optional, List
-
-import numpy as np
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import joblib
-import ssl
 
 from routes.bookings import bookings
 from routes.users import users
@@ -45,6 +39,15 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
+
+
+# @app.post("/ping")
+# async def validate_token(req: Request):
+#     headers = req.headers
+#     jwt = headers.get("authorization")
+#
+#     user = get_auth().verify_id_token(jwt)
+#     return User(uid=user["user_id"], email=user["email"])
 
 
 if __name__ == '__main__':

@@ -1,13 +1,16 @@
 import firebase_admin
-from fastapi import Header, Depends, HTTPException, status
+from fastapi import Header, Depends, HTTPException, status, Request
 from firebase_admin import auth
 from firebase_admin import credentials
 from firebase_admin import firestore
 
-cred = credentials.Certificate(r"betest-f4184-firebase-adminsdk-olp9p-e7cc5114bc.json")
-firebase_admin.initialize_app(cred)
+from models import User
 
-fdb = None
+if not firebase_admin._apps:
+    cred = credentials.Certificate(r"betest-f4184-firebase-adminsdk-olp9p-e7cc5114bc.json")
+    firebase_admin.initialize_app(cred)
+
+    fdb = None
 
 
 def setup():
@@ -28,14 +31,16 @@ def get_auth():
     return auth
 
 
-def get_current_user(authorization: str = Header(None)):
-    if authorization is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header is missing")
+async def verify_token(req: Request):
+    jwt = req.headers.get("Authorization")
+    if not jwt:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization token is missing")
 
-    token = authorization.split(" ")[1]
+    if jwt.startswith("Bearer "):
+        jwt = jwt[7:]
+
     try:
-        # Verify the token using Firebase Admin SDK
-        decoded_token = auth.verify_id_token(token)
-        return decoded_token
+        user = get_auth().verify_id_token(jwt)
+        return User(uid=user["user_id"], email=user["email"])
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid authentication token")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid or expired token: {e}")

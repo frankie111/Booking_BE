@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel
 
-from firebase import get_auth, get_firestore_db
+from firebase import get_auth, get_firestore_db, verify_token
+from models import User
 
 users = APIRouter()
 
@@ -15,14 +16,14 @@ def register_user(email, password):
         raise HTTPException(status_code=500, detail=f'Error creating new user: {e}')
 
 
-def save_user_data(uid, email, name):
+def save_user_data(user: User):
     try:
         db = get_firestore_db()
-        user_ref = db.collection('users').document(uid)
+        user_ref = db.collection('users').document(user.uid)
         user_ref.set({
-            'email': email,
-            'name': name,
-            'is_admin': False
+            'email': user.email,
+            'name': user.name,
+            'is_admin': user.is_admin
         })
         print('Successfully saved user data to Firestore')
     except Exception as e:
@@ -33,25 +34,17 @@ class AddUserModelResponse(BaseModel):
     message: str
 
 
-class AddUserModelRequest(BaseModel):
-    email: str
-    name: str
-    password: str
-
-
 @users.post(
     "/user/",
     tags=["Users"],
-    response_model=AddUserModelResponse,
+    response_model=User,
     description="Register a new user"
 )
 async def add_user(
-        req: AddUserModelRequest
+        req: Request, user: User = Depends(verify_token)
 ):
-    user = register_user(req.email, req.password)
-    save_user_data(user.uid, req.email, req.name)
-
-    return AddUserModelResponse(message=f"Added user [{user.uid}] - {req.name}")
+    save_user_data(user)
+    return AddUserModelResponse(message=f"Added user {user.uid}")
 
 
 class DeleteUserModelResponse(BaseModel):
