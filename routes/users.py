@@ -58,7 +58,7 @@ async def add_user(
         user_data: User,
         user: User = Depends(verify_token)
 ):
-    user_data['is_admin'] = False
+    user_data.is_admin = False
     save_user_data(user_data)
     return AddUserModelResponse(message=f"Added user {user.uid}")
 
@@ -80,7 +80,7 @@ def delete_user(
     try:
         # Check if user is admin / user has permission to delete themselves:
         user_data = get_user_data_by_id(user.uid)
-        if not user_data.is_admin or user_data.uid != uid:
+        if not user_data.is_admin and user_data.uid != uid:
             raise HTTPException(status_code=403, detail="User does not have permission to delete this user")
 
         # Delete user from Firebase Authentication

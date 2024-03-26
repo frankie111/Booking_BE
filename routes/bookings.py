@@ -6,8 +6,9 @@ from fastapi import APIRouter, HTTPException, Depends
 from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
-from firebase import get_firestore_db
-from models import Booking
+from firebase import get_firestore_db, verify_token
+from models import Booking, User
+from routes.users import get_user_data_by_id
 
 bookings = APIRouter()
 
@@ -35,7 +36,6 @@ class AddBookingResponse(BaseModel):
 
 
 class AddBookingRequest(BaseModel):
-    uid: str
     loc_id: str
     start: datetime
     end: datetime
@@ -44,7 +44,6 @@ class AddBookingRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "uid": "SeqLN0T2PKNh4rOIIxbP70lEc4E3",
                 "loc_id": "CLUJ_5_beta_1.1",
                 "start": "2024-05-15T09:00:00+0200",
                 "end": "2024-05-15T11:00:00+0200",
@@ -59,8 +58,9 @@ class AddBookingRequest(BaseModel):
     response_model=AddBookingResponse,
     description="Add a new booking. Checks for overlapping bookings for the location at the given time"
 )
-def add_booking(
-        req: AddBookingRequest
+async def add_booking(
+        req: AddBookingRequest,
+        user: User = Depends(verify_token)
 ):
     try:
         db = get_firestore_db()
@@ -85,11 +85,12 @@ def add_booking(
         overlapping_bookings = get_overlapping_bookings(req.loc_id, req.start, req.end)
         if len(overlapping_bookings) > 0:
             raise HTTPException(status_code=400,
-                                detail=f"Requested booking overlaps with {len(overlapping_bookings)} existing booking(s).")
+                                detail=f"Requested booking overlaps with {len(overlapping_bookings)} existing "
+                                       f"booking(s).")
 
         book_ref = loc_ref.collection("bookings").document()
         new_book = {
-            "uid": req.uid,
+            "uid": user.uid,
             "start": req.start,
             "end": req.end,
             "nr_attend": req.nr_attend,
@@ -117,16 +118,21 @@ class DeleteBookingResponse(BaseModel):
     response_model=DeleteBookingResponse,
     description="Delete a booking by id"
 )
-async def delete_booking(loc_id: str, booking_id: str, uid: str):
+async def delete_booking(
+        loc_id: str,
+        booking_id: str,
+        user: User = Depends(verify_token)
+):
     db = get_firestore_db()
     booking_ref = db.collection("locations").document(loc_id).collection("bookings").document(booking_id)
-
     booking = booking_ref.get()
     if not booking.exists:
-        raise HTTPException(status_code=404, detail=f"Booking {booking_id} not found")
+        raise HTTPException(status_code=404, detail=f"Booking {booking_id} does not exist.")
 
+    # Check if user has permission to delete booking:
+    user_data = get_user_data_by_id(user.uid)
     booking_dict = booking.to_dict()
-    if booking_dict["uid"] != uid:
+    if booking_dict["uid"] != user.uid and not user_data.is_admin:
         raise HTTPException(status_code=403, detail="You do not have permission to delete this booking")
 
     booking_ref.delete()
