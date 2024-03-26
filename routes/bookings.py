@@ -30,6 +30,17 @@ def add_locations_from_file():
             )
 
 
+def delete_all_bookings():
+    db = get_firestore_db()
+    bookings_ref = db.collection_group("bookings").stream()
+    deleted = []
+    for booking in bookings_ref:
+        deleted.append(booking.id)
+        booking.reference.delete()
+
+    print(f"Deleted {len(deleted)} bookings: \n {deleted}")
+
+
 class AddBookingResponse(BaseModel):
     message: str
     booking: dict
