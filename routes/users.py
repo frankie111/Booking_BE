@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from firebase import get_auth, get_firestore_db, verify_token
@@ -30,6 +30,20 @@ def save_user_data(user: User):
         raise HTTPException(status_code=500, detail=f'Error saving user data {e}')
 
 
+def get_user_data_by_id(uid) -> User:
+    try:
+        db = get_firestore_db()
+        user_doc = db.collection('users').document(uid).get()
+        if not user_doc.exists:
+            raise HTTPException(status_code=404, detail=f"User {uid} doesn't exist")
+
+        user_dict = user_doc.to_dict()
+        return User(uid=uid, **user_dict)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f'Error retrieving user data {e}')
+
+
 class AddUserModelResponse(BaseModel):
     message: str
 
@@ -41,9 +55,11 @@ class AddUserModelResponse(BaseModel):
     description="Register a new user"
 )
 async def add_user(
+        user_data: User,
         user: User = Depends(verify_token)
 ):
-    save_user_data(user)
+    user_data['is_admin'] = False
+    save_user_data(user_data)
     return AddUserModelResponse(message=f"Added user {user.uid}")
 
 
@@ -57,8 +73,16 @@ class DeleteUserModelResponse(BaseModel):
     response_model=DeleteUserModelResponse,
     description="Delete a user by id"
 )
-def delete_user(uid):
+def delete_user(
+        uid: str,
+        user: User = Depends(verify_token)
+):
     try:
+        # Check if user is admin / user has permission to delete themselves:
+        user_data = get_user_data_by_id(user.uid)
+        if not user_data.is_admin or user_data.uid != uid:
+            raise HTTPException(status_code=403, detail="User does not have permission to delete this user")
+
         # Delete user from Firebase Authentication
         get_auth().delete_user(uid)
         print('Successfully deleted user from Firebase Authentication')
