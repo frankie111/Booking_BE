@@ -33,12 +33,12 @@ def get_auth():
     return auth
 
 
-async def verify_token(access_token: Optional[str] = Header(None, description="Firebase Access Token")):
-    if not access_token:
+async def verify_token(authorization: Optional[str] = Header(None, description="Firebase Access Token")):
+    if not authorization:
         raise HTTPException(status_code=403, detail="Authorization token is missing")
 
     try:
-        user = get_auth().verify_id_token(access_token)
+        user = get_auth().verify_id_token(authorization)
         return User(uid=user["user_id"], email=user["email"])
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
