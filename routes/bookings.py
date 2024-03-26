@@ -208,7 +208,10 @@ class ActiveBookingsResponse(BaseModel):
     response_model=ActiveBookingsResponse,
     description="Get all active bookings for the specified location"
 )
-async def get_active_bookings_for_location(loc_id: str):
+async def get_active_bookings_for_location(
+        loc_id: str,
+        user: User = Depends(verify_token)
+):
     active_bookings = get_all_active_bookings_for_location(loc_id)
     return ActiveBookingsResponse(active_bookings=active_bookings)
 
