@@ -2,7 +2,7 @@ import csv
 import time
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
@@ -263,8 +263,8 @@ class LocationsStatusesResponse(BaseModel):
     description="Get a dict of statuses for all Locations"
 )
 async def get_status_for_locations(
-        start: datetime,
-        end: datetime,
+        start: datetime = Query(None, description="Start of the interval in ISO 8601 format"),
+        end: datetime = Query(None, description="End of the interval in ISO 8601 format"),
         user: User = Depends(verify_token)):
     start_time = time.time()  # Record the start time
     db = get_firestore_db()
