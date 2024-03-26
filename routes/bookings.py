@@ -262,7 +262,10 @@ class LocationsStatusesResponse(BaseModel):
     response_model=LocationsStatusesResponse,
     description="Get a dict of statuses for all Locations"
 )
-async def get_status_for_locations(start: datetime, end: datetime):
+async def get_status_for_locations(
+        start: datetime,
+        end: datetime,
+        user: User = Depends(verify_token)):
     start_time = time.time()  # Record the start time
     db = get_firestore_db()
     loc_ref = db.collection("locations")
