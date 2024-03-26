@@ -237,7 +237,14 @@ class BookingsResponse(BaseModel):
     response_model=BookingsResponse,
     description="Get all Bookings"
 )
-async def get_all_bookings():
+async def get_all_bookings(
+        user: User = Depends(verify_token)
+):
+    # Check if user is admin:
+    user_data = get_user_data_by_id(user.uid)
+    if not user_data.is_admin:
+        raise HTTPException(status_code=403, detail="You do not have permission to view all bookings (No-Admin)")
+
     db = get_firestore_db()
     bookings_ref = db.collection_group("bookings").stream()
     bookings = [booking.to_dict() for booking in bookings_ref]
