@@ -1,7 +1,8 @@
 from typing import Optional
 
 import firebase_admin
-from fastapi import Header, Depends, HTTPException, status, Request
+from fastapi import Header, Depends, HTTPException, status, Request, Security
+from fastapi.security import APIKeyHeader
 from firebase_admin import auth
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -33,7 +34,11 @@ def get_auth():
     return auth
 
 
-async def verify_token(authorization: Optional[str] = Header(None, description="Firebase Access Token")):
+api_key_header_auth = APIKeyHeader(name="Authorization", scheme_name="Authorization",
+                                   description="Firebase Access Token")
+
+
+async def verify_token(authorization: str = Security(api_key_header_auth)):
     if not authorization:
         raise HTTPException(status_code=403, detail="Authorization token is missing")
 

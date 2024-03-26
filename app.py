@@ -11,6 +11,7 @@ app = FastAPI(
     version="0.1.0",
     swagger_ui_parameters={"defaultModelsExpandDepth": -1},
 )
+
 app.include_router(users)
 app.include_router(bookings)
 
