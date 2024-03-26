@@ -7,13 +7,13 @@ from models import User
 users = APIRouter()
 
 
-def register_user(email, password):
-    try:
-        user = get_auth().create_user(email=email, password=password)
-        print('Successfully created new user: {0}'.format(user.uid))
-        return user
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f'Error creating new user: {e}')
+# def register_user(email, password):
+#     try:
+#         user = get_auth().create_user(email=email, password=password)
+#         print('Successfully created new user: {0}'.format(user.uid))
+#         return user
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f'Error creating new user: {e}')
 
 
 def save_user_data(user: User):
@@ -37,11 +37,11 @@ class AddUserModelResponse(BaseModel):
 @users.post(
     "/user/",
     tags=["Users"],
-    response_model=User,
+    response_model=AddUserModelResponse,
     description="Register a new user"
 )
 async def add_user(
-        req: Request, user: User = Depends(verify_token)
+        user: User = Depends(verify_token)
 ):
     save_user_data(user)
     return AddUserModelResponse(message=f"Added user {user.uid}")

@@ -1,3 +1,5 @@
+from typing import Optional
+
 import firebase_admin
 from fastapi import Header, Depends, HTTPException, status, Request
 from firebase_admin import auth
@@ -31,16 +33,12 @@ def get_auth():
     return auth
 
 
-async def verify_token(req: Request):
-    jwt = req.headers.get("Authorization")
-    if not jwt:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization token is missing")
-
-    if jwt.startswith("Bearer "):
-        jwt = jwt[7:]
+async def verify_token(access_token: Optional[str] = Header(None, description="Firebase Access Token")):
+    if not access_token:
+        raise HTTPException(status_code=403, detail="Authorization token is missing")
 
     try:
-        user = get_auth().verify_id_token(jwt)
+        user = get_auth().verify_id_token(access_token)
         return User(uid=user["user_id"], email=user["email"])
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid or expired token: {e}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid token: {e}")
