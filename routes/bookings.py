@@ -84,6 +84,9 @@ async def add_booking(
         if req.start >= req.end:
             raise HTTPException(status_code=400, detail="Start time must be before end time.")
 
+        if req.start.day != req.end.day:
+            raise HTTPException(status_code=400, detail="Booking cannot span over multiple days.")
+
         loc_dict = loc_dict.to_dict()
         _type = loc_dict["type"]
         cap = loc_dict["capacity"]
