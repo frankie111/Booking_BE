@@ -81,6 +81,9 @@ async def add_booking(
         if not loc_dict.exists:
             raise HTTPException(status_code=404, detail="Location does not exist.")
 
+        if req.start >= req.end:
+            raise HTTPException(status_code=400, detail="Start time must be before end time.")
+
         loc_dict = loc_dict.to_dict()
         _type = loc_dict["type"]
         cap = loc_dict["capacity"]
@@ -279,7 +282,6 @@ async def get_status_for_locations(
         user: User = Depends(verify_token)):
     start = start.astimezone()
     end = end.astimezone()
-    print(f"{start} - {end}")
     db = get_firestore_db()
     loc_ref = db.collection("locations")
     locations = loc_ref.stream()
