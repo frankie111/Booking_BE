@@ -14,3 +14,10 @@ def convert_to_datetime(date_str):
     localized_dt_object = dt_object.replace(tzinfo=local_timezone)
 
     return localized_dt_object
+
+
+def nano_to_datetime(dt_with_nano):
+    """Recreate a datetime object without nanoseconds."""
+    return datetime(dt_with_nano.year, dt_with_nano.month, dt_with_nano.day,
+                    dt_with_nano.hour, dt_with_nano.minute, dt_with_nano.second,
+                    tzinfo=dt_with_nano.tzinfo)

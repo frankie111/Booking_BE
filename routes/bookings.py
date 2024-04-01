@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from firebase import get_firestore_db, verify_token
 from models import Booking, User
 from routes.users import get_user_data_by_id
+from utils.utils import nano_to_datetime
 
 bookings = APIRouter()
 
@@ -184,8 +185,13 @@ def get_overlapping_bookings_for_loc(loc_id: str, bookings: list[dict], start: d
     for booking in bookings:
         booking_start = booking['start'] = booking['start'].astimezone()
         booking_end = booking['end'] = booking['end'].astimezone()
-        if start < booking_end and end > booking_start:
+        if (start <= booking_start <= end or
+                start <= booking_end <= end or
+                booking_start <= start <= booking_end):
             overlapping_bookings.append(booking)
+
+    # for booking in overlapping_bookings:
+    #     print(booking)
 
     return overlapping_bookings
 
@@ -198,9 +204,10 @@ def get_all_active_bookings_for_location(loc_id: str):
     if not loc_dict.exists:
         raise HTTPException(status_code=404, detail="Location does not exist.")
 
-    # Query bookings that end after the current booking should start
-    current_time = datetime.now().astimezone()
-    query = loc_ref.collection("bookings").where(filter=FieldFilter("end", ">", current_time)).stream()
+    # Query bookings that end after the start of the day
+    now = datetime.now().astimezone()
+    sod = now.replace(hour=8, minute=0, second=0, microsecond=0)
+    query = loc_ref.collection("bookings").where(filter=FieldFilter("end", ">", sod)).stream()
 
     # Retrieve the active bookings with their document IDs
     active_bookings = []
@@ -293,6 +300,8 @@ async def get_status_for_locations(
     query = db.collection_group("bookings").where(filter=FieldFilter("end", ">", start)).stream()
     active_bookings = [booking.to_dict() for booking in query]
 
+    print(len(active_bookings))
+
     loc_statuses = {}
 
     for loc in locations:
@@ -300,8 +309,9 @@ async def get_status_for_locations(
         ov_bookings = get_overlapping_bookings_for_loc(loc_id, active_bookings, start, end)
         covered_intervals = []
         for booking in ov_bookings:
-            booking_start = booking['start'].astimezone()
-            booking_end = booking['end'].astimezone()
+            booking_start = nano_to_datetime(booking['start'].astimezone())
+            booking_end = nano_to_datetime(booking['end'].astimezone())
+            print(f"{booking_start} - {booking_end}")
             covered_intervals.append((booking_start, booking_end))
 
         if len(covered_intervals) == 0:
@@ -309,6 +319,7 @@ async def get_status_for_locations(
         else:
             if check_for_gaps(covered_intervals):
                 status = "PARTIALLY BOOKED"
+                print("gaps found")
             else:
                 min_start = min(covered_intervals, key=lambda x: x[0])[0]
                 max_end = max(covered_intervals, key=lambda x: x[1])[1]
