@@ -290,6 +290,9 @@ async def get_status_for_locations(
         start: datetime = Query(None, description="Start of the interval in ISO 8601 format"),
         end: datetime = Query(None, description="End of the interval in ISO 8601 format"),
         user: User = Depends(verify_token)):
+    # loc_statuses = {"CLUJ_5_beta_1.1": "FULLY BOOKED", "CLUJ_5_beta_1.2": "FREE", "CLUJ_5_beta_1.3": "PARTIALLY BOOKED"}
+    # return LocationsStatusesResponse(statuses=loc_statuses)
+
     start = start.astimezone()
     end = end.astimezone()
     db = get_firestore_db()
@@ -300,8 +303,6 @@ async def get_status_for_locations(
     query = db.collection_group("bookings").where(filter=FieldFilter("end", ">", start)).stream()
     active_bookings = [booking.to_dict() for booking in query]
 
-    print(len(active_bookings))
-
     loc_statuses = {}
 
     for loc in locations:
@@ -311,7 +312,7 @@ async def get_status_for_locations(
         for booking in ov_bookings:
             booking_start = nano_to_datetime(booking['start'].astimezone())
             booking_end = nano_to_datetime(booking['end'].astimezone())
-            print(f"{booking_start} - {booking_end}")
+            # print(f"{booking_start} - {booking_end}")
             covered_intervals.append((booking_start, booking_end))
 
         if len(covered_intervals) == 0:
@@ -319,7 +320,6 @@ async def get_status_for_locations(
         else:
             if check_for_gaps(covered_intervals):
                 status = "PARTIALLY BOOKED"
-                print("gaps found")
             else:
                 min_start = min(covered_intervals, key=lambda x: x[0])[0]
                 max_end = max(covered_intervals, key=lambda x: x[1])[1]
