@@ -1,7 +1,5 @@
-from typing import Optional
-
 import firebase_admin
-from fastapi import Header, Depends, HTTPException, status, Request, Security
+from fastapi import HTTPException, status, Security
 from fastapi.security import APIKeyHeader
 from firebase_admin import auth
 from firebase_admin import credentials
@@ -9,20 +7,18 @@ from firebase_admin import firestore
 
 from models import User
 
-if not firebase_admin._apps:
-    cred = credentials.Certificate(r"betest-f4184-firebase-adminsdk-olp9p-e7cc5114bc.json")
-    firebase_admin.initialize_app(cred)
-
-    fdb = None
+fdb = None
 
 
 def setup():
     global fdb
 
-    if fdb is not None:
-        return
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(r"betest-f4184-firebase-adminsdk-olp9p-e7cc5114bc.json")
+        firebase_admin.initialize_app(cred)
 
-    fdb = firestore.client()
+    if fdb is None:
+        fdb = firestore.client()
 
 
 def get_firestore_db():

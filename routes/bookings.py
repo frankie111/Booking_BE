@@ -1,15 +1,15 @@
 import csv
-import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from google.cloud.firestore_v1 import FieldFilter
 from pydantic import BaseModel
 
+import utils.cache as cache
 from firebase import get_firestore_db, verify_token
 from models import Booking, User
 from routes.users import get_user_data_by_id
-from utils.utils import nano_to_datetime
+from utils.time_utils import nano_to_datetime
 
 bookings = APIRouter()
 
@@ -285,6 +285,11 @@ class LocationsStatusesResponse(BaseModel):
     tags=["Bookings"],
     response_model=LocationsStatusesResponse,
     description="Get a dict of statuses for all Locations"
+)
+@cache.async_redis(
+    cache_duration=timedelta(hours=2),
+    suffix="_locations_status",
+    ignore_cache=False
 )
 async def get_status_for_locations(
         start: datetime = Query(None, description="Start of the interval in ISO 8601 format"),
