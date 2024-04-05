@@ -154,7 +154,6 @@ async def delete_booking(
         raise HTTPException(status_code=403, detail="You do not have permission to delete this booking")
 
     booking_ref.delete()
-
     return DeleteBookingResponse(message=f"Booking {booking_id} deleted successfully")
 
 
@@ -276,28 +275,15 @@ async def get_all_bookings(
     return BookingsResponse(bookings=bookings)
 
 
-class LocationsStatusesResponse(BaseModel):
-    statuses: dict[str, str]
-
-
-@bookings.get(
-    "/bookings/status",
-    tags=["Bookings"],
-    response_model=LocationsStatusesResponse,
-    description="Get a dict of statuses for all Locations"
-)
-@cache.async_redis(
+@cache.redis(
     cache_duration=timedelta(hours=2),
-    suffix="_locations_status",
+    suffix=cache.LOCATION_STATUSES_CACHE_SUFFIX,
     ignore_cache=False
 )
-async def get_status_for_locations(
-        start: datetime = Query(None, description="Start of the interval in ISO 8601 format"),
-        end: datetime = Query(None, description="End of the interval in ISO 8601 format"),
-        user: User = Depends(verify_token)):
-    # loc_statuses = {"CLUJ_5_beta_1.1": "FULLY BOOKED", "CLUJ_5_beta_1.2": "FREE", "CLUJ_5_beta_1.3": "PARTIALLY BOOKED"}
-    # return LocationsStatusesResponse(statuses=loc_statuses)
-
+def get_statuses_from_cache(
+        start: datetime,
+        end: datetime
+):
     start = start.astimezone()
     end = end.astimezone()
     db = get_firestore_db()
@@ -337,6 +323,24 @@ async def get_status_for_locations(
 
         loc_statuses[loc_id] = status
 
+    return loc_statuses
+
+
+class LocationsStatusesResponse(BaseModel):
+    statuses: dict[str, str]
+
+
+@bookings.get(
+    "/bookings/status",
+    tags=["Bookings"],
+    response_model=LocationsStatusesResponse,
+    description="Get a dict of statuses for all Locations"
+)
+async def get_status_for_locations(
+        start: datetime = Query(None, description="Start of the interval in ISO 8601 format"),
+        end: datetime = Query(None, description="End of the interval in ISO 8601 format"),
+        user: User = Depends(verify_token)):
+    loc_statuses = get_statuses_from_cache(start, end)
     return LocationsStatusesResponse(statuses=loc_statuses)
 
 # 2024-03-16T09:00:00+0200

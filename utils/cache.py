@@ -1,11 +1,12 @@
 import json
 from datetime import timedelta
 from functools import wraps
-import asyncio
 
 import redis
 
 rd = redis.Redis(host="localhost", port=6379, db=0)
+
+LOCATION_STATUSES_CACHE_SUFFIX = "_locations_status"
 
 
 def merge_args_and_kwargs(*args, **kwargs):
@@ -132,3 +133,12 @@ def async_redis(cache_duration: timedelta, suffix: str = None, ignore_cache: boo
         return wrapper
 
     return decorator
+
+
+def delete(key: str, suffix: str = ""):
+    key = key + suffix
+    if rd.exists(key):
+        print(f"Deleting cache key: {key}")
+        rd.delete(key)
+    else:
+        print(f"Cache key not found: {key}")

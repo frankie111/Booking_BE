@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from firebase import setup
 from routes.bookings import bookings
 from routes.users import users
 
@@ -35,6 +36,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],  # Specify which method are allowed
     allow_headers=["X-Requested-With", "Content-Type", "Accept", "Origin", "Authorization"],  # Specific headers allowed
 )
+
+setup()
 
 
 @app.get("/")
