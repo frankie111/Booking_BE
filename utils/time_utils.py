@@ -16,6 +16,10 @@ def convert_to_datetime(date_str):
     return localized_dt_object
 
 
+def convert_dt_to_date_string(dt_object: datetime):
+    return dt_object.astimezone().strftime("%d-%m-%Y")
+
+
 def nano_to_datetime(dt_with_nano):
     """Recreate a datetime object without nanoseconds."""
     return datetime(dt_with_nano.year, dt_with_nano.month, dt_with_nano.day,

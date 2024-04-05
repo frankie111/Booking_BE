@@ -9,7 +9,7 @@ import utils.cache as cache
 from firebase import get_firestore_db, verify_token
 from models import Booking, User
 from routes.users import get_user_data_by_id
-from utils.time_utils import nano_to_datetime
+from utils.time_utils import nano_to_datetime, convert_dt_to_date_string
 
 bookings = APIRouter()
 
@@ -119,6 +119,10 @@ async def add_booking(
         )
         book_ref.update({"id": book_ref.id})
 
+        # Invalidate cache
+        cache_key = get_cache_key_for_datetime(req.start)
+        cache.delete(cache_key, suffix=cache.LOCATION_STATUSES_CACHE_SUFFIX)
+
         return AddBookingResponse(message=f"Added booking {book_ref.id}", booking=new_book)
     except HTTPException as e:
         raise e
@@ -154,7 +158,32 @@ async def delete_booking(
         raise HTTPException(status_code=403, detail="You do not have permission to delete this booking")
 
     booking_ref.delete()
+
+    # Invalidate cache
+    booking_start = nano_to_datetime(booking_dict['start'].astimezone())
+    cache_key = get_cache_key_for_datetime(booking_start)
+    cache.delete(cache_key, suffix=cache.LOCATION_STATUSES_CACHE_SUFFIX)
+
     return DeleteBookingResponse(message=f"Booking {booking_id} deleted successfully")
+
+
+def get_working_interval_from_datetime(dt: datetime):
+    """
+    Get the working interval for the specified datetime.
+    This is used for getting the cache key for the statuses.
+    Start of day = 8:00 AM
+    End of day = 8:00 PM
+    :param dt:
+    :return: A tuple containing the start and end of the working interval
+    """
+    start = dt.replace(hour=8, minute=0, second=0, microsecond=0)
+    end = dt.replace(hour=20, minute=0, second=0, microsecond=0)
+    return start, end
+
+
+def get_cache_key_for_datetime(dt: datetime):
+    start, end = get_working_interval_from_datetime(dt)
+    return f"{convert_dt_to_date_string(start)}_{convert_dt_to_date_string(end)}"
 
 
 def get_overlapping_bookings(loc_id: str, start: datetime, end: datetime):

@@ -1,8 +1,10 @@
 import json
-from datetime import timedelta
+from datetime import timedelta, datetime
 from functools import wraps
 
 import redis
+
+from utils.time_utils import convert_dt_to_date_string
 
 rd = redis.Redis(host="localhost", port=6379, db=0)
 
@@ -10,11 +12,18 @@ LOCATION_STATUSES_CACHE_SUFFIX = "_locations_status"
 
 
 def merge_args_and_kwargs(*args, **kwargs):
-    merged = [a for a in args if isinstance(a, str)]
+    merged = []
+    for a in args:
+        if isinstance(a, str):
+            merged.append(a)
+        elif isinstance(a, datetime):
+            merged.append(convert_dt_to_date_string(a))
 
     for value in kwargs.values():
         if isinstance(value, str):
             merged.append(value)
+        elif isinstance(value, datetime):
+            merged.append(convert_dt_to_date_string(value))
 
     return merged
 
