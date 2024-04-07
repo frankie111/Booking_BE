@@ -9,6 +9,7 @@ from utils.time_utils import convert_dt_to_date_string
 rd = redis.Redis(host="localhost", port=6379, db=0)
 
 LOCATION_STATUSES_CACHE_SUFFIX = "_locations_status"
+ACTIVE_BOOKINGS_CACHE_SUFFIX = "_active_bookings"
 
 
 def merge_args_and_kwargs(*args, **kwargs):

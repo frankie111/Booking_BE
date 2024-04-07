@@ -122,6 +122,7 @@ async def add_booking(
         # Invalidate cache
         cache_key = get_cache_key_for_datetime(req.start)
         cache.delete(cache_key, suffix=cache.LOCATION_STATUSES_CACHE_SUFFIX)
+        cache.delete(req.loc_id, suffix=cache.ACTIVE_BOOKINGS_CACHE_SUFFIX)
 
         return AddBookingResponse(message=f"Added booking {book_ref.id}", booking=new_book)
     except HTTPException as e:
@@ -163,6 +164,7 @@ async def delete_booking(
     booking_start = nano_to_datetime(booking_dict['start'].astimezone())
     cache_key = get_cache_key_for_datetime(booking_start)
     cache.delete(cache_key, suffix=cache.LOCATION_STATUSES_CACHE_SUFFIX)
+    cache.delete(loc_id, suffix=cache.ACTIVE_BOOKINGS_CACHE_SUFFIX)
 
     return DeleteBookingResponse(message=f"Booking {booking_id} deleted successfully")
 
@@ -224,6 +226,11 @@ def get_overlapping_bookings_for_loc(loc_id: str, bookings: list[dict], start: d
     return overlapping_bookings
 
 
+@cache.redis(
+    cache_duration=timedelta(hours=12),
+    suffix=cache.ACTIVE_BOOKINGS_CACHE_SUFFIX,
+    ignore_cache=False
+)
 def get_all_active_bookings_for_location(loc_id: str):
     db = get_firestore_db()
     loc_ref = db.collection("locations").document(loc_id)
@@ -243,8 +250,8 @@ def get_all_active_bookings_for_location(loc_id: str):
         booking_data = doc.to_dict()
         booking_id = doc.id
         booking_data['id'] = booking_id
-        booking_data['start'] = booking_data['start'].astimezone()
-        booking_data['end'] = booking_data['end'].astimezone()
+        booking_data['start'] = nano_to_datetime(booking_data['start'].astimezone())
+        booking_data['end'] = nano_to_datetime(booking_data['end'].astimezone())
         active_bookings.append(booking_data)
 
     return active_bookings
@@ -305,7 +312,7 @@ async def get_all_bookings(
 
 
 @cache.redis(
-    cache_duration=timedelta(hours=2),
+    cache_duration=timedelta(hours=12),
     suffix=cache.LOCATION_STATUSES_CACHE_SUFFIX,
     ignore_cache=False
 )

@@ -28,7 +28,7 @@ def test_validate_endpoint():
 
 
 # print(get_user_data_by_id("4FcS6HDIqPOG4hIeFrg5DO9Znwc2"))
-# delete_all_bookings()
+delete_all_bookings()
 
 # start = convert_to_datetime("01-04-2024 09:00:00")
 # end = convert_to_datetime("01-04-2024 19:00:00")
